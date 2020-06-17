@@ -1,0 +1,14 @@
+[{
+  "modid": "rotm",
+  "name": "Rebirth of the Mobs",
+  "description": "Adds ways to customise certain aspects of mobs, from immunity to certain sources to allowing to spawn more mobs on death and preventing mobs to ride minecarts or boats.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Quarris", "Sandwich Horror"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}]

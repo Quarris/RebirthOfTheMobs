@@ -1,0 +1,35 @@
+Feature List: https://docs.google.com/document/d/1z_4pGRANbltYuoLkOQd36mZR0BaBqpJnAZhwqlsP-FU
+
+Features
+=================================================================
+
+RotN Mods
+---------
+Rough Mobs Revamp Addon (total 7 hours)
+	- Complete Immunity Customisation (1 hour)
+	- Aggrospawn (3 hours)
+	- Deathspawn (2 hours)
+	- Mob Melee Effects (30 minutes)
+	- Mob Defense Effects (30 minutes)
+
+Ride or Die (total 1 hour 30 minutes)
+	- Default behaviour (30 minutes)
+	- Might not be fully compatible with modded entities, depending how the mods implement their own boats and minecarts
+		- Potential solution with a config for the boat/minecart entity (1 hour)
+
+Bad News Bossrush (total 1 hours)
+
+Swim Speed (total 2 hours)
+
+Spawning Unleashed (total 1 hour 30 minutes)
+
+The Complete Dialogue Mod
+-------------------------
+To be detemined
+
+
+Commission Details
+---------------------------------------------
+RotN Mods total is 13 hours
+The cost for RotN Mods is 130 GBP.
+Commission details can be found at https://docs.google.com/document/d/1z_4pGRANbltYuoLkOQd36mZR0BaBqpJnAZhwqlsP-FU

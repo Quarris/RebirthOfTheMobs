@@ -1,0 +1,46 @@
+- Entity (possibly split this?)
+    - Cancel Potions
+    - Cancel Damage
+    - Aggrospawn
+    - Deathspawn
+    - Mob Melee Effects
+    - Mob Defense Effects
+    - % Health Regain
+
+- Fixes (?)
+    - Swim Speed
+        - Global
+        - Per entity
+    - Spawn on ILLEGAL blocks (configurable for types maybe if possible (i.e. slabs, transparent, leaves etc.)?)
+
+- Vehicle
+    - Allowlist entity to be able to ride boat
+    - Treat as blocklist
+    - Allowlist entity to be able to ride minecarts
+    - Treat as blocklist
+    OR (instead if possible)
+    - Allowlist entity to be able to ride vehicle (Format: "modid:entity;modid:vehicleEntity")
+    - Treat as blocklist
+
+
+
+- Debug
+    - Enable Debug Mode
+
+    - Items
+        - Enable Potion Checker
+            - Prints the resource name of the potion which affect the player into chat (if held)
+            - Prints the current potion effects which are applied on the entity (if RClicked)
+        - Enable DamageSource Checker
+            - Prints the name of the damage source which affected the player into chat (if held)
+            - Prints the name of the last damage source which the entity was affected by (if RClicked)
+        - Enable Entity Checker
+            - Prints the resource name of the entity (if RClicked)
+
+    - Commands
+        - /dumpPotions
+            - Dumps the names of all registered potion effects into a log file
+        - /dumpEntities
+            - Dumps the names of all registered entities into a log file
+        - /dumpSounds
+            - Dumps the names of all registered sounds into a log file
