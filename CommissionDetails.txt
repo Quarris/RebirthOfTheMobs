@@ -6,7 +6,7 @@ Features
 RotN Mods
 ---------
 Rough Mobs Revamp Addon (total 7 hours)
-	- Complete Immunity Customisation (1 hour)
+	[X] Complete Immunity Customisation (1 hour)
 	- Aggrospawn (3 hours)
 	- Deathspawn (2 hours)
 	- Mob Melee Effects (30 minutes)
