@@ -1,4 +1,4 @@
-package quarris.rotm.events;
+package quarris.rotm.event;
 
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.fml.common.Mod;

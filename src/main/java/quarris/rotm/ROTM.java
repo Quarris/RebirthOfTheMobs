@@ -1,14 +1,12 @@
 package quarris.rotm;
 
-import net.minecraftforge.common.config.Config;
-import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import org.apache.logging.log4j.Logger;
+import quarris.rotm.capability.SpawnSummonsCap;
 import quarris.rotm.config.ModConfigs;
 
 @Mod(modid = ROTM.MODID, name = ROTM.NAME, version = ROTM.VERSION)
@@ -22,11 +20,12 @@ public class ROTM {
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         logger = event.getModLog();
+        ModConfigs.updateConfigs();
     }
 
     @EventHandler
     public void init(FMLInitializationEvent event) {
-        ModConfigs.updateConfigs();
+        SpawnSummonsCap.register();
     }
 
     @EventHandler

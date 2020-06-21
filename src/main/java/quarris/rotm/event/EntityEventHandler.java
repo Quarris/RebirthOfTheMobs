@@ -1,16 +1,19 @@
-package quarris.rotm.events;
+package quarris.rotm.event;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.entity.living.*;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.Event;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import quarris.rotm.ROTM;
+import quarris.rotm.capability.SpawnSummonsCap;
 import quarris.rotm.config.ModConfigs;
 
 import java.util.Collection;
@@ -39,7 +42,7 @@ public class EntityEventHandler {
         if (!entity.world.isRemote) {
             DamageSource source = event.getSource();
 
-            Collection<String> sourcesToCancel = ModConfigs.entityConfigs.damageSourcesToCancel
+            Collection<String> sourcesToCancel = ModConfigs.entityConfigs.damagesToCancel
                     .get(entity instanceof EntityPlayer ? PLAYER_RES : EntityList.getKey(entity));
 
             if (sourcesToCancel.contains(source.getDamageType())) {
@@ -49,8 +52,15 @@ public class EntityEventHandler {
     }
 
     @SubscribeEvent
-    public static void aggroSpawn(LivingSetAttackTargetEvent event) {
+    public static void summonSpawns(LivingEvent.LivingUpdateEvent event) {
+        if (event.getEntityLiving().world.isRemote)
+            return;
 
+        SpawnSummonsCap cap = event.getEntityLiving().getCapability(SpawnSummonsCap.instance, null);
+        if (cap == null)
+            return;
+
+        cap.update();
     }
 
     @SubscribeEvent(priority = EventPriority.LOW)
@@ -66,5 +76,12 @@ public class EntityEventHandler {
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void applyMeleeDefenseEffect(LivingHurtEvent event) {
 
+    }
+
+    @SubscribeEvent
+    public static void attachCapabilities(AttachCapabilitiesEvent<Entity> event) {
+        if (event.getObject() instanceof EntityLivingBase && ModConfigs.entityConfigs.summonSpawns.keySet().contains(EntityList.getKey(event.getObject()))) {
+            event.addCapability(new ResourceLocation(ROTM.MODID, "summonspawn"), new SpawnSummonsCap((EntityLivingBase) event.getObject()));
+        }
     }
 }

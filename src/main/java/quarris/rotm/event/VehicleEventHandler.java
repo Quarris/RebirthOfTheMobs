@@ -1,4 +1,4 @@
-package quarris.rotm.events;
+package quarris.rotm.event;
 
 public class VehicleEventHandler {
 }
