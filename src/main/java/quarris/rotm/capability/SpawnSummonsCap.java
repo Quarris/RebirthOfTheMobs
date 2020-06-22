@@ -2,9 +2,7 @@ package quarris.rotm.capability;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityList;
-import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.*;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -12,6 +10,7 @@ import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldEntitySpawner;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityInject;
 import net.minecraftforge.common.capabilities.CapabilityManager;
@@ -123,7 +122,7 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
 
         public boolean canSpawn(World world, EntityLivingBase master) {
             return world.getTotalWorldTime() >= this.nextSpawnTime &&
-                    (master.getHealth() / master.getMaxHealth()) <= this.entry.healthPerc &&
+                    (master.getHealth() / master.getMaxHealth()) <= this.entry.health &&
                     (this.entry.bypassMaxSpawns || this.summonedEntities.size() < this.entry.maxSpawn) &&
                     (this.entry.cap <= 0 || this.totalSpawned < this.entry.cap);
         }
@@ -131,6 +130,7 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
         /**
          * This method calculates the amount of summons which can spawn in the next cycle.
          * It takes into account whether it can bypass the maxSpawns and if it has a cap.
+         *
          * @return The amount of summons that can spawn in the next cycle.
          */
         public int getNextSpawnAmount() {
@@ -171,31 +171,32 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
             }
         }
 
-        // TODO: Spawning of entities is pretty bad right now. Need to make it so that entities don't attempt to spawn in block etc.
         public void attemptSpawn() {
             EntityLivingBase master = SpawnSummonsCap.this.entity;
             if (!master.world.isRemote && this.canSpawn(master.world, master)) {
                 int amount = this.getNextSpawnAmount();
 
                 for (int i = 0; i < amount; i++) {
-                    if (this.entry.cap > 0 && this.totalSpawned >= this.entry.cap)
-                        break;
-
                     Entity toSpawn = EntityList.createEntityByIDFromName(this.entry.summon, master.world);
                     if (toSpawn == null) {
                         continue;
                     }
 
-                    toSpawn.setLocationAndAngles(
-                            master.posX + this.random.nextFloat() * 4 - 2,
-                            master.posY + 0.5,
-                            master.posZ + this.random.nextFloat() * 4 - 2,
-                            this.random.nextFloat() * 360.0F,
-                            0.0F);
+                    int tries = 20;
+                    for (int j = 0; j < tries; j++) {
+                        toSpawn.setLocationAndAngles(
+                                master.posX + this.random.nextFloat() * 4 - 4,
+                                master.posY + 0.5f + this.random.nextFloat() * 3,
+                                master.posZ + this.random.nextFloat() * 4 - 4,
+                                this.random.nextFloat() * 360.0F,
+                                0.0F);
 
-                    if (master.world.spawnEntity(toSpawn)) {
-                        this.summonedEntities.add(toSpawn.getUniqueID());
-                        this.totalSpawned++;
+
+                        if (WorldEntitySpawner.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry.getPlacementForEntity(toSpawn.getClass()), master.world, toSpawn.getPosition()) && master.world.spawnEntity(toSpawn)) {
+                            this.summonedEntities.add(toSpawn.getUniqueID());
+                            this.totalSpawned++;
+                            break;
+                        }
                     }
                 }
                 this.setRandomCooldownAt(master.world.getTotalWorldTime());

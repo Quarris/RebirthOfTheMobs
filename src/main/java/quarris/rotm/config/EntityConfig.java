@@ -2,10 +2,16 @@ package quarris.rotm.config;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import net.minecraft.nbt.JsonToNBT;
+import net.minecraft.nbt.NBTException;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import quarris.rotm.ROTM;
+import quarris.rotm.config.utils.StringConfig;
+import quarris.rotm.config.utils.StringConfigException;
+import quarris.rotm.utils.Settable;
 import quarris.rotm.utils.Utils;
 
 import java.util.ArrayList;
@@ -43,11 +49,10 @@ public class EntityConfig implements ISubConfig {
     public String[] rawCancelDamage = new String[]{};
     @Config.Ignore
     public final Multimap<ResourceLocation, String> damagesToCancel = HashMultimap.create();
-
     @Config.Name("Summon Spawns")
     @Config.Comment({
             "Summon Spawns allows mobs to be summoned when an entity has a target and reaches a certain health.",
-            "Format: <modid:master>;<modid:summon>;<healthPercentage>;<spawnRange>;<cooldownRange>;<bypass>;<despawnOnDeath>;<maxCap>;<disableXP>;<disableLoot>;<sound>;?<id>",
+            "Format: <modid:master>;<modid:summon>;<healthPercentage>;<spawnRange>;<cooldownRange>;<bypass>;<despawnOnDeath>;<maxCap>;<disableXP>;<disableLoot>;<sound>;?<id>;?<nbt>",
             "Where: <modid:master> and <modid:summon> are the entities for the master and the mob to summon respectively.",
             "<healthPercentage> is a value between 0 and 100 (inclusive) which determines the health that the master entity has to be at to spawn the summon",
             "<spawnRange> is the min-max range of summons that can spawn in one cycle. Additionally higher value determines the maximum amount of this summon entity that can exist by the master entity.",
@@ -57,9 +62,11 @@ public class EntityConfig implements ISubConfig {
             "<maxCap> is the maximum amount of this summon type that can ever be spawned by this entity. Set this to 0 or less to disable",
             "<disableXP> and <disableLoot> are true/false values and will make it so that the summoned entities do not drop XP or Loot respectively",
             "<sound> is the sound that will be played when the summon happens",
+            "?<nbt> optional NBT to apply to the summon on spawn.",
             "?<id> optional number if you want to have a master:summon combo more than once. This has to be unique."
     })
     public String[] rawSummonSpawns = new String[]{};
+
     @Config.Ignore
     public final Multimap<ResourceLocation, SummonType> summonSpawns = HashMultimap.create();
 
@@ -69,139 +76,87 @@ public class EntityConfig implements ISubConfig {
         this.updatePotionsConfig();
         this.updateDamageSourceConfigs();
         this.updateSummonSpawnConfigs();
-        System.out.println(this.summonSpawns);
     }
 
     private void updatePotionsConfig() {
         this.potionsToCancel.clear();
         for (String s : this.rawCancelPotions) {
-            String[] split = s.split(";");
-            if (split.length < 2) {
-                ROTM.logger.warn("Invalid format for CancelPotionEffect config; skipping {}", s);
-                continue;
-            }
-
-            ResourceLocation entity = new ResourceLocation(split[0]);
-            if (!isEntityValid(entity, "CancelPotionEffect")) {
-                continue;
-            }
-
             List<ResourceLocation> potions = new ArrayList<>();
-            for (int i = 1; i < split.length; i++) {
-                ResourceLocation potion = new ResourceLocation(split[i]);
-                if (!ForgeRegistries.POTIONS.containsKey(potion)) {
-                    ROTM.logger.warn("Potion does not exist for CancelPotionEffect config; skipping {}", potion.toString());
-                    continue;
-                }
-                potions.add(potion);
+            Settable<ResourceLocation> entity = Settable.create();
+            try {
+                new StringConfig(s)
+                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(entity::set)
+                        .rest().parseAs(ResourceLocation::new).validate(ForgeRegistries.POTIONS::containsKey).<ResourceLocation>accept(potions::add);
+            } catch (StringConfigException exception) {
+                ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
 
-            this.potionsToCancel.putAll(entity, potions);
+            this.potionsToCancel.putAll(entity.get(), potions);
         }
     }
 
     public void updateDamageSourceConfigs() {
         this.damagesToCancel.clear();
         for (String s : this.rawCancelDamage) {
-            String[] split = s.split(";");
-            if (split.length < 2) {
-                ROTM.logger.warn("Invalid format for CancelDamageSource config; skipping {}", s);
-                continue;
+            List<String> damages = new ArrayList<>();
+            Settable<ResourceLocation> entity = Settable.create();
+            try {
+                new StringConfig(s)
+                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(entity::set)
+                        .rest().<String>accept(damages::add);
+            } catch (StringConfigException exception) {
+                ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
 
-            ResourceLocation entity = new ResourceLocation(split[0]);
-            if (!isEntityValid(entity, "CancelDamageSource")) {
-                continue;
-            }
-
-            List<String> sources = new ArrayList<>();
-            sources.addAll(Arrays.asList(split));
-            sources.remove(0);
-            this.damagesToCancel.putAll(entity, sources);
+            this.damagesToCancel.putAll(entity.get(), damages);
         }
     }
 
     public void updateSummonSpawnConfigs() {
         this.summonSpawns.clear();
         for (String s : this.rawSummonSpawns) {
+            SummonType.Builder builder = SummonType.builder();
+            Settable<ResourceLocation> masterSetter = Settable.create();
+
             try {
-                String[] split = s.split(";");
-                if (split.length < 11) {
-                    ROTM.logger.warn("Invalid format for Summon Spawn config; skipping {}", s);
-                    continue;
-                }
-
-                int id = split.length == 12 ? Integer.parseInt(split[11]) : 0;
-
-                ResourceLocation master = new ResourceLocation(split[0]);
-                if (!isEntityValid(master, "Summon Spawn")) {
-                    continue;
-                }
-
-                ResourceLocation summon = new ResourceLocation(split[1]);
-                if (this.summonSpawns.containsKey(master)) {
-                    if (this.summonSpawns.get(master).stream().anyMatch(entry -> entry.summon.equals(summon) && entry.id == id)) {
-                        ROTM.logger.warn("Entity {} with summon {} and id {} already exist for Summon Spawns. Add a unique id number at the end; skipping {}", master, summon, id, s);
-                        continue;
-                    }
-                }
-                if (!isEntityValid(summon, "Summon Spawn")) {
-                    continue;
-                }
-
-                float healthPerc = Float.parseFloat(split[2]) / 100;
-
-                int minSpawn;
-                int maxSpawn;
-                String[] spawnRange = split[3].split("-");
-                int minSRange = Integer.parseInt(spawnRange[0]);
-                if (spawnRange.length == 1) {
-                    minSpawn = minSRange;
-                    maxSpawn = minSRange;
-                } else {
-                    minSpawn = minSRange;
-                    maxSpawn = Integer.parseInt(spawnRange[1]);
-                }
-
-                int minCooldown;
-                int maxCooldown;
-                String[] cdRange = split[4].split("-");
-                int minCRange = Integer.parseInt(cdRange[0]);
-                if (cdRange.length == 1) {
-                    minCooldown = minCRange;
-                    maxCooldown = minCRange;
-                } else {
-                    minCooldown = minCRange;
-                    maxCooldown = Integer.parseInt(cdRange[1]);
-                }
-
-                boolean bypassMax = Boolean.parseBoolean(split[5]);
-                boolean despawnOnDeath = Boolean.parseBoolean(split[6]);
-
-                int maxCap = Integer.parseInt(split[7]);
-
-                boolean disableXP = Boolean.parseBoolean(split[8]);
-                boolean disableLoot = Boolean.parseBoolean(split[9]);
-
-                ResourceLocation sound = new ResourceLocation(split[10]);
-                if (!ForgeRegistries.SOUND_EVENTS.containsKey(sound)) {
-                    ROTM.logger.warn("Sound does not exist for Summon Spawn config, skipping; {}", sound.toString());
-                    continue;
-                }
-
-                SummonType summonType = new SummonType(summon, id, healthPerc, minSpawn, maxSpawn, minCooldown, maxCooldown, bypassMax, despawnOnDeath, maxCap, disableXP, disableLoot, sound);
-
-                summonSpawns.put(master, summonType);
-            } catch (Exception e) {
-                ROTM.logger.warn("Error parsing Summon Spawn config, skipping; {}", s);
+                new StringConfig(s)
+                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(masterSetter::set)
+                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(builder::summon)
+                        .next().parseAs(Float::parseFloat).<Float>validate(i -> (i >= 0.0 && i <= 100.0)).accept(builder::health)
+                        .next().parseAs(Integer::parseInt).<Integer>validateRange((min, max) -> min <= max).acceptRange(builder::minSpawn, builder::maxSpawn)
+                        .next().parseAs(Integer::parseInt).<Integer>validateRange((min, max) -> min <= max).acceptRange(builder::minCooldown, builder::maxCooldown)
+                        .next().parseAs(Boolean::parseBoolean).accept(builder::bypassMaxSpawns)
+                        .next().parseAs(Boolean::parseBoolean).accept(builder::despawnOnDeath)
+                        .next().parseAs(Integer::parseInt).accept(builder::cap)
+                        .next().parseAs(Boolean::parseBoolean).accept(builder::disableXP)
+                        .next().parseAs(Boolean::parseBoolean).accept(builder::disableLoot)
+                        .next().parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
+                        .next().optional(0).parseAs(Integer::parseInt)
+                        .<Integer>validate((id) -> {
+                            if (this.summonSpawns.containsKey(masterSetter.get())) {
+                                return this.summonSpawns.get(masterSetter.get()).stream().anyMatch(entry -> entry.summon.equals(builder.summon) != (id.equals(entry.id)));
+                            }
+                            return true;
+                        }).accept(builder::id)
+                        .next().optional(new NBTTagCompound())
+                        .parseAs(str -> {
+                            try {
+                                return JsonToNBT.getTagFromJson(str);
+                            } catch (NBTException e) {
+                                e.printStackTrace();
+                            }
+                            return new NBTTagCompound();
+                        }).accept(builder::nbt);
+            } catch (StringConfigException exception) {
+                ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
+
+            this.summonSpawns.put(masterSetter.get(), builder.build());
         }
     }
 
-
-    private static boolean isEntityValid(ResourceLocation entity, String configType) {
+    private static boolean isEntityValid(ResourceLocation entity) {
         if (!Utils.doesEntityExist(entity)) {
-            ROTM.logger.warn("Entity does not exist for {} config, skipping; {}", configType, entity.toString());
             return false;
         }
         return true;
