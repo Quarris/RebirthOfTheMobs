@@ -16,9 +16,10 @@ public class StringConfig {
     private int argIndex = -1;
     private Function<String, ?> converter = DEFAULT_CONVERTER;
 
-    private boolean isOptional;
+    private boolean lastOptional;
     private boolean parseRemaining;
     private Object defaultOptional;
+    private boolean lastOptionalSucceeded;
 
     public StringConfig(String args) {
         this.args = args.split(";");
@@ -33,8 +34,11 @@ public class StringConfig {
         if (this.parseRemaining) {
             throw this.parseRestException;
         }
-        this.argIndex++;
-        this.isOptional = false;
+        if (!this.lastOptional || this.lastOptionalSucceeded) {
+            this.argIndex++;
+        }
+        this.lastOptionalSucceeded = false;
+        this.lastOptional = false;
         this.converter = DEFAULT_CONVERTER;
         return this;
     }
@@ -51,7 +55,8 @@ public class StringConfig {
     }
 
     public final <T> StringConfig optional(T def) {
-        this.isOptional = true;
+        this.lastOptional = true;
+        this.lastOptionalSucceeded = true;
         this.defaultOptional = def;
         return this;
     }
@@ -76,7 +81,7 @@ public class StringConfig {
         try {
             split = this.args[this.argIndex].split("-", 2);
         } catch (ArrayIndexOutOfBoundsException e) {
-            if (!this.isOptional) {
+            if (!this.lastOptional) {
                 throw this.outOfArgsException.apply(this.argIndex);
             }
             return this;
@@ -110,9 +115,10 @@ public class StringConfig {
         try {
             split = this.args[this.argIndex].split("-", 2);
         } catch (ArrayIndexOutOfBoundsException e) {
-            if (!this.isOptional) {
+            if (!this.lastOptional) {
                 throw this.outOfArgsException.apply(this.argIndex);
             } else {
+                this.lastOptionalSucceeded = false;
                 split = (String[]) this.defaultOptional;
             }
         }
@@ -136,8 +142,9 @@ public class StringConfig {
         T value;
         try {
             value = (T) converter.apply(this.args[index]);
-        } catch (ArrayIndexOutOfBoundsException | ClassCastException e) {
-            if (this.isOptional) {
+        } catch (Exception e) {
+            if (this.lastOptional) {
+                this.lastOptionalSucceeded = false;
                 value = (T) this.defaultOptional;
             } else {
                 throw this.converterException.apply(this.argIndex);

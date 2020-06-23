@@ -182,20 +182,27 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
                         continue;
                     }
 
-                    int tries = 20;
+                    if (toSpawn instanceof EntityLiving) {
+                        ((EntityLiving) toSpawn).onInitialSpawn(master.world.getDifficultyForLocation(toSpawn.getPosition()), null);
+                    }
+
+                    toSpawn.deserializeNBT(this.entry.nbt);
+
+                    int tries = 50;
                     for (int j = 0; j < tries; j++) {
                         toSpawn.setLocationAndAngles(
-                                master.posX + this.random.nextFloat() * 4 - 4,
-                                master.posY + 0.5f + this.random.nextFloat() * 3,
-                                master.posZ + this.random.nextFloat() * 4 - 4,
+                                master.posX + this.random.nextFloat() * 8 - 4,
+                                master.posY + this.random.nextInt(5) - 2,
+                                master.posZ + this.random.nextFloat() * 8 - 4,
                                 this.random.nextFloat() * 360.0F,
                                 0.0F);
 
-
-                        if (WorldEntitySpawner.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry.getPlacementForEntity(toSpawn.getClass()), master.world, toSpawn.getPosition()) && master.world.spawnEntity(toSpawn)) {
-                            this.summonedEntities.add(toSpawn.getUniqueID());
-                            this.totalSpawned++;
-                            break;
+                        if (WorldEntitySpawner.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry.getPlacementForEntity(toSpawn.getClass()), master.world, toSpawn.getPosition())) {
+                            if (master.world.spawnEntity(toSpawn)) {
+                                this.summonedEntities.add(toSpawn.getUniqueID());
+                                this.totalSpawned++;
+                                break;
+                            }
                         }
                     }
                 }
@@ -204,7 +211,8 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
         }
 
         @Override
-        public NBTTagCompound serializeNBT() {
+        public NBTTagCompound serializeNBT
+                () {
             NBTTagCompound nbt = new NBTTagCompound();
             NBTTagList summonedList = new NBTTagList();
             for (UUID uuid : this.summonedEntities) {
@@ -218,7 +226,9 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
         }
 
         @Override
-        public void deserializeNBT(NBTTagCompound nbt) {
+        public void deserializeNBT
+                (NBTTagCompound
+                         nbt) {
             this.summonedEntities.clear();
             NBTTagList summonedList = nbt.getTagList("SummonedList", Constants.NBT.TAG_COMPOUND);
             for (int i = 0; i < summonedList.tagCount(); i++) {
@@ -230,7 +240,8 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
         }
 
         @Override
-        public String toString() {
+        public String toString
+                () {
             final StringBuilder sb = new StringBuilder("SummonSpawn{");
             sb.append("entry=").append(entry);
             sb.append('}');
