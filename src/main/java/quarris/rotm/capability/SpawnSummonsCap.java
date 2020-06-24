@@ -9,6 +9,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.SoundCategory;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldEntitySpawner;
 import net.minecraftforge.common.capabilities.Capability;
@@ -17,8 +18,9 @@ import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.INBTSerializable;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import quarris.rotm.config.ModConfigs;
-import quarris.rotm.config.SummonType;
+import quarris.rotm.config.SummonSpawnType;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -60,6 +62,12 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
         for (SummonSpawn summonSpawn : this.spawns.values()) {
             summonSpawn.updateSummonList();
             summonSpawn.attemptSpawn();
+        }
+    }
+
+    public void despawnSummons() {
+        for (SummonSpawn summonSpawn : this.spawns.values()) {
+            summonSpawn.despawnSummons();
         }
     }
 
@@ -109,19 +117,20 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
     public class SummonSpawn implements INBTSerializable<NBTTagCompound> {
 
         public final Random random = new Random();
-        public final SummonType entry;
+        public final SummonSpawnType entry;
         private long nextSpawnTime;
         private int totalSpawned;
         private final List<UUID> summonedEntities;
 
-        public SummonSpawn(SummonType entry, long time) {
+        public SummonSpawn(SummonSpawnType entry, long time) {
             this.entry = entry;
             this.nextSpawnTime = time;
             this.summonedEntities = new ArrayList<>();
         }
 
         public boolean canSpawn(World world, EntityLivingBase master) {
-            return world.getTotalWorldTime() >= this.nextSpawnTime &&
+            return master.getAttackingEntity() != null &&
+                    world.getTotalWorldTime() >= this.nextSpawnTime &&
                     (master.getHealth() / master.getMaxHealth()) <= this.entry.health &&
                     (this.entry.bypassMaxSpawns || this.summonedEntities.size() < this.entry.maxSpawn) &&
                     (this.entry.cap <= 0 || this.totalSpawned < this.entry.cap);
@@ -175,7 +184,7 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
             EntityLivingBase master = SpawnSummonsCap.this.entity;
             if (!master.world.isRemote && this.canSpawn(master.world, master)) {
                 int amount = this.getNextSpawnAmount();
-
+                boolean spawned = false;
                 for (int i = 0; i < amount; i++) {
                     Entity toSpawn = EntityList.createEntityByIDFromName(this.entry.summon, master.world);
                     if (toSpawn == null) {
@@ -188,6 +197,14 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
 
                     toSpawn.deserializeNBT(this.entry.nbt);
 
+                    if (this.entry.disableLoot) {
+                        toSpawn.getEntityData().setBoolean("DisableXP", true);
+                    }
+
+                    if (this.entry.disableXP) {
+                        toSpawn.getEntityData().setBoolean("DisableLoot", true);
+                    }
+
                     int tries = 50;
                     for (int j = 0; j < tries; j++) {
                         toSpawn.setLocationAndAngles(
@@ -197,22 +214,30 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
                                 this.random.nextFloat() * 360.0F,
                                 0.0F);
 
-                        if (WorldEntitySpawner.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry.getPlacementForEntity(toSpawn.getClass()), master.world, toSpawn.getPosition())) {
-                            if (master.world.spawnEntity(toSpawn)) {
-                                this.summonedEntities.add(toSpawn.getUniqueID());
-                                this.totalSpawned++;
-                                break;
-                            }
+                        if (WorldEntitySpawner.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry.getPlacementForEntity(toSpawn.getClass()), master.world, toSpawn.getPosition()) && master.world.spawnEntity(toSpawn)) {
+                            spawned = true;
+                            this.summonedEntities.add(toSpawn.getUniqueID());
+                            this.totalSpawned++;
+                            break;
                         }
                     }
                 }
-                this.setRandomCooldownAt(master.world.getTotalWorldTime());
+                if (spawned) {
+                    master.world.playSound(null, master.getPosition(), ForgeRegistries.SOUND_EVENTS.getValue(this.entry.sound), SoundCategory.HOSTILE, 1, 1);
+                    this.setRandomCooldownAt(master.world.getTotalWorldTime());
+                }
             }
         }
 
+        public void despawnSummons() {
+            EntityLivingBase master = SpawnSummonsCap.this.entity;
+            master.world.getLoadedEntityList().stream()
+                    .filter(e -> this.summonedEntities.contains(e.getUniqueID()))
+                    .forEach(Entity::setDead);
+        }
+
         @Override
-        public NBTTagCompound serializeNBT
-                () {
+        public NBTTagCompound serializeNBT() {
             NBTTagCompound nbt = new NBTTagCompound();
             NBTTagList summonedList = new NBTTagList();
             for (UUID uuid : this.summonedEntities) {

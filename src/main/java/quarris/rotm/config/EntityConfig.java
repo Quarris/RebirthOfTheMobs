@@ -15,7 +15,6 @@ import quarris.rotm.utils.Settable;
 import quarris.rotm.utils.Utils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class EntityConfig implements ISubConfig {
@@ -49,6 +48,7 @@ public class EntityConfig implements ISubConfig {
     public String[] rawCancelDamage = new String[]{};
     @Config.Ignore
     public final Multimap<ResourceLocation, String> damagesToCancel = HashMultimap.create();
+
     @Config.Name("Summon Spawns")
     @Config.Comment({
             "Summon Spawns allows mobs to be summoned when an entity has a target and reaches a certain health.",
@@ -68,14 +68,30 @@ public class EntityConfig implements ISubConfig {
     public String[] rawSummonSpawns = new String[]{};
 
     @Config.Ignore
-    public final Multimap<ResourceLocation, SummonType> summonSpawns = HashMultimap.create();
+    public final Multimap<ResourceLocation, SummonSpawnType> summonSpawns = HashMultimap.create();
 
+    @Config.Name("Death Spawns")
+    @Config.Comment({
+            "Death Spawns allows mobs to be summoned when an entity dies.",
+            "Format: <modid:entity>;<modid:spawn>;<spawnRange>;<disableXP>;<disableLoot>;<sound>;?<nbt>",
+            "Where: <modid:master> and <modid:spawn> are the entities for the entity that dies and the mob that spawns respectively.",
+            "<spawnRange> is the min-max range of summons that can spawn in one cycle. Additionally higher value determines the maximum amount of this summon entity that can exist by the master entity.",
+            "<disableXP> and <disableLoot> are true/false values and will make it so that the summoned entities do not drop XP or Loot respectively",
+            "<sound> is the sound that will be played when the summon happens",
+            "?<nbt> optional NBT to apply to the summon on spawn.",
+    })
+    public String[] rawDeathSpawns = new String[]{};
+
+    @Config.Ignore
+    public final Multimap<ResourceLocation, DeathSpawnType> deathSpawns = HashMultimap.create();
 
     @Override
     public void onConfigChanged() {
         this.updatePotionsConfig();
         this.updateDamageSourceConfigs();
         this.updateSummonSpawnConfigs();
+        this.updateDeathSpawnsConfig();
+        System.out.println(this.deathSpawns);
     }
 
     private void updatePotionsConfig() {
@@ -115,7 +131,7 @@ public class EntityConfig implements ISubConfig {
     public void updateSummonSpawnConfigs() {
         this.summonSpawns.clear();
         for (String s : this.rawSummonSpawns) {
-            SummonType.Builder builder = SummonType.builder();
+            SummonSpawnType.Builder builder = SummonSpawnType.builder();
             Settable<ResourceLocation> masterSetter = Settable.create();
 
             try {
@@ -152,6 +168,37 @@ public class EntityConfig implements ISubConfig {
             }
 
             this.summonSpawns.put(masterSetter.get(), builder.build());
+        }
+    }
+
+    public void updateDeathSpawnsConfig() {
+        this.deathSpawns.clear();
+        for (String s : this.rawDeathSpawns) {
+            DeathSpawnType.Builder builder = DeathSpawnType.builder();
+            Settable<ResourceLocation> masterSetter = Settable.create();
+
+            try {
+                new StringConfig(s)
+                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(masterSetter::set)
+                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(builder::summon)
+                        .next().parseAs(Integer::parseInt).<Integer>validateRange((min, max) -> min <= max).acceptRange(builder::minSpawn, builder::maxSpawn)
+                        .next().parseAs(Boolean::parseBoolean).accept(builder::disableXP)
+                        .next().parseAs(Boolean::parseBoolean).accept(builder::disableLoot)
+                        .next().parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
+                        .next().optional(new NBTTagCompound())
+                        .parseAs(str -> {
+                            try {
+                                return JsonToNBT.getTagFromJson(str);
+                            } catch (NBTException e) {
+                                e.printStackTrace();
+                            }
+                            return new NBTTagCompound();
+                        }).accept(builder::nbt);
+            } catch (StringConfigException exception) {
+                ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
+            }
+
+            this.deathSpawns.put(masterSetter.get(), builder.build());
         }
     }
 

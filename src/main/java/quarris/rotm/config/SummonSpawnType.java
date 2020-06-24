@@ -3,25 +3,25 @@ package quarris.rotm.config;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 
-public class SummonType {
+public class SummonSpawnType {
 
     public final ResourceLocation summon;   // Entity being summoned
-    public final int id;
-    public final float health;          // The percentage of health the master needs to be for this summon to trigger
+    public final int id;                    // ID to differentiate between master:summon entries
+    public final float health;              // The percentage of health the master needs to be for this summon to trigger
     public final int minSpawn;              // Minimum amount to spawn per cycle
     public final int maxSpawn;              // Maximum amount to spawn per cycle
     public final int minCooldownTicks;      // Minimum cooldown after spawn
     public final int maxCooldownTicks;      // Maximum cooldown after spawn
     public final boolean bypassMaxSpawns;   // Can bypass the max amount spawned
     public final boolean despawnOnDeath;    // Do the summoned entities die when the master entity dies
-    public final int cap;                // Hard cap on the total amount of this summon that can spawn by the master entity
+    public final int cap;                   // Hard cap on the total amount of this summon that can spawn by the master entity
     public final boolean disableXP;         // Should XP be dropped by the summons on death
     public final boolean disableLoot;       // Should Loot be dropped by the summons on death
     public final ResourceLocation sound;    // The sound to be played when the summon happens
-    public final NBTTagCompound nbt;
+    public final NBTTagCompound nbt;        // NBT to apply to the summoned entity on spawn
 
 
-    SummonType(ResourceLocation summon, int id, float health, int minSpawn, int maxSpawn, int minCooldown, int maxCooldown, boolean bypassMaxSpawns, boolean despawnOnDeath, int cap, boolean disableXP, boolean disableLoot, ResourceLocation sound, NBTTagCompound nbt) {
+    SummonSpawnType(ResourceLocation summon, int id, float health, int minSpawn, int maxSpawn, int minCooldown, int maxCooldown, boolean bypassMaxSpawns, boolean despawnOnDeath, int cap, boolean disableXP, boolean disableLoot, ResourceLocation sound, NBTTagCompound nbt) {
         this.summon = summon;
         this.id = id;
         this.health = health;
@@ -36,10 +36,6 @@ public class SummonType {
         this.disableLoot = disableLoot;
         this.sound = sound;
         this.nbt = nbt;
-    }
-
-    SummonType(ResourceLocation summon, float health, int minSpawn, int maxSpawn, int minCooldown, int maxCooldown, boolean bypassMaxSpawns, boolean despawnOnDeath, int cap, boolean disableXP, boolean disableLoot, ResourceLocation sound, NBTTagCompound nbt) {
-        this(summon, 0, health, minSpawn, maxSpawn, minCooldown, maxCooldown, bypassMaxSpawns, despawnOnDeath, cap, disableXP, disableLoot, sound, nbt);
     }
 
     public static Builder builder() {
@@ -156,8 +152,8 @@ public class SummonType {
             return this;
         }
 
-        public SummonType build() {
-            return new SummonType(summon, id, health, minSpawn, maxSpawn, minCooldown, maxCooldown, bypassMaxSpawns, despawnOnDeath, cap, disableXP, disableLoot, sound, nbt);
+        public SummonSpawnType build() {
+            return new SummonSpawnType(summon, id, health, minSpawn, maxSpawn, minCooldown, maxCooldown, bypassMaxSpawns, despawnOnDeath, cap, disableXP, disableLoot, sound, nbt);
         }
     }
 }
