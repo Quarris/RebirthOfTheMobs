@@ -20,7 +20,7 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import quarris.rotm.config.ModConfigs;
-import quarris.rotm.config.SummonSpawnType;
+import quarris.rotm.config.types.SummonSpawnType;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

@@ -1,6 +1,6 @@
 package quarris.rotm.config.utils;
 
-import java.util.Arrays;
+import java.util.*;
 import java.util.function.*;
 
 public class StringConfig {
@@ -99,6 +99,16 @@ public class StringConfig {
         throw this.invalidArgumentException.apply(this.argIndex);
     }
 
+    public final <T> StringConfig validateList(Predicate<T> itemPredicate) throws StringConfigException {
+        List<T> list = this.getList(this.argIndex);
+        for (T item : list) {
+            if (!itemPredicate.test(item)) {
+                throw this.invalidArgumentException.apply(this.argIndex);
+            }
+        }
+        return this;
+    }
+
     public final <T> StringConfig accept(Consumer<T> action) throws StringConfigException {
         if (this.parseRemaining) {
             for (int i = this.argIndex; i < this.args.length; i++) {
@@ -134,11 +144,34 @@ public class StringConfig {
         return this;
     }
 
-    private final <T> T getArg() throws StringConfigException {
+    private <T> List<T> getList(int index) throws StringConfigException {
+        String raw = this.getRawList(index);
+        List<T> list = new ArrayList<>();
+
+        String innerRaw = raw.substring(raw.indexOf('[') + 1, raw.indexOf(']')).replace(" ", "");
+        if (innerRaw.isEmpty()) {
+            return list;
+        }
+
+        String[] split = innerRaw.split(",");
+        for (String itemString : split) {
+            try {
+                list.add((T) this.converter.apply(itemString));
+            } catch (ClassCastException e) {
+                if (!this.lastOptional) {
+                    throw this.converterException.apply(this.argIndex);
+                }
+                return Collections.emptyList();
+            }
+        }
+        return list;
+    }
+
+    private <T> T getArg() throws StringConfigException {
         return this.getArg(this.argIndex);
     }
 
-    private final <T> T getArg(int index) throws StringConfigException {
+    private <T> T getArg(int index) throws StringConfigException {
         T value;
         try {
             value = (T) converter.apply(this.args[index]);
@@ -151,5 +184,37 @@ public class StringConfig {
             }
         }
         return value;
+    }
+
+    public StringConfig blockList(Consumer<Boolean> blockList) throws StringConfigException {
+        String raw = this.getRawList(this.argIndex);
+        blockList.accept(raw.startsWith("!"));
+        return this;
+    }
+
+    public String getRawList(int index) throws StringConfigException {
+        String raw;
+        try {
+            raw = this.args[index];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            if (!this.lastOptional) {
+                throw this.outOfArgsException.apply(index);
+            }
+            raw = (String) this.defaultOptional;
+        }
+
+        if (!(raw.endsWith("]") && (raw.startsWith("[") || raw.startsWith("!") && raw.charAt(1) == '['))) {
+            raw = (String) this.defaultOptional;
+        }
+
+        return raw;
+    }
+
+    public <T> StringConfig acceptList(Consumer<T> action) throws StringConfigException {
+        List<T> list = this.getList(this.argIndex);
+        for (T item : list)
+            action.accept(item);
+
+        return this;
     }
 }

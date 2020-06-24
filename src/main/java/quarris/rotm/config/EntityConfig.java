@@ -6,9 +6,13 @@ import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.nbt.NBTException;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import quarris.rotm.ROTM;
+import quarris.rotm.config.types.DeathSpawnType;
+import quarris.rotm.config.types.MobAttackType;
+import quarris.rotm.config.types.SummonSpawnType;
 import quarris.rotm.config.utils.StringConfig;
 import quarris.rotm.config.utils.StringConfigException;
 import quarris.rotm.utils.Settable;
@@ -85,13 +89,30 @@ public class EntityConfig implements ISubConfig {
     @Config.Ignore
     public final Multimap<ResourceLocation, DeathSpawnType> deathSpawns = HashMultimap.create();
 
+    @Config.Name("Mob Melee")
+    @Config.Comment({
+            "Mob Melee allows to apply potions effects when a mob damages you in a close combat",
+            "Format: <modid:entity>;<potionEffect>;<health>;<potionLevel>;<potionDuration>;<chance>;?<dimension>",
+            "Where: <modid:entity> is the entity that does the melee.",
+            "<potionEffect> is the name of the potion effect to use.",
+            "<health> is the percentage (0-100 exclusive-inclusive) that the entity has to be at to apply the effect.",
+            "<potionLevel> is the tier of the potion starting at 0. For example, Poison I has level 0, Speed II has level 1.",
+            "<potionDuration> is the duration in seconds of the potion.",
+            "<chance> is the percentage (0-100 exclusive-inclusive) chance that the effect will take place on attack.",
+            "?<dimension> is an optional list of dimension ids in which the effect can/cannot be applied in. This takes form of '[1, -1, 2, 3, ...]'. You can prefix this list with '!' to turn it into a list of dimensions to block instead. For example '![0]' would block only the Overworld."
+    })
+    public String[] rawMobAttacks = new String[]{};
+
+    @Config.Ignore
+    public final Multimap<ResourceLocation, MobAttackType> mobAttacks = HashMultimap.create();
+
     @Override
     public void onConfigChanged() {
         this.updatePotionsConfig();
         this.updateDamageSourceConfigs();
         this.updateSummonSpawnConfigs();
         this.updateDeathSpawnsConfig();
-        System.out.println(this.deathSpawns);
+        this.updateMobAttacksConfigs();
     }
 
     private void updatePotionsConfig() {
@@ -111,7 +132,7 @@ public class EntityConfig implements ISubConfig {
         }
     }
 
-    public void updateDamageSourceConfigs() {
+    private void updateDamageSourceConfigs() {
         this.damagesToCancel.clear();
         for (String s : this.rawCancelDamage) {
             List<String> damages = new ArrayList<>();
@@ -128,7 +149,7 @@ public class EntityConfig implements ISubConfig {
         }
     }
 
-    public void updateSummonSpawnConfigs() {
+    private void updateSummonSpawnConfigs() {
         this.summonSpawns.clear();
         for (String s : this.rawSummonSpawns) {
             SummonSpawnType.Builder builder = SummonSpawnType.builder();
@@ -171,7 +192,7 @@ public class EntityConfig implements ISubConfig {
         }
     }
 
-    public void updateDeathSpawnsConfig() {
+    private void updateDeathSpawnsConfig() {
         this.deathSpawns.clear();
         for (String s : this.rawDeathSpawns) {
             DeathSpawnType.Builder builder = DeathSpawnType.builder();
@@ -202,10 +223,28 @@ public class EntityConfig implements ISubConfig {
         }
     }
 
-    private static boolean isEntityValid(ResourceLocation entity) {
-        if (!Utils.doesEntityExist(entity)) {
-            return false;
+    private void updateMobAttacksConfigs() {
+        this.mobAttacks.clear();
+        for (String s : this.rawMobAttacks) {
+            Settable<ResourceLocation> entity = Settable.create();
+            MobAttackType.Builder builder = MobAttackType.builder();
+            try {
+                new StringConfig(s)
+                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(entity::set)
+                        .next().parseAs(ResourceLocation::new).validate(ForgeRegistries.POTIONS::containsKey).accept(builder::potion)
+                        .next().parseAs(Float::parseFloat).<Float>validate(health -> health > 0 && health <= 100).accept(builder::health)
+                        .next().parseAs(Integer::parseInt).<Integer>validate(level -> level >= 0).accept(builder::level)
+                        .next().parseAs(Integer::parseInt).<Integer>validate(duration -> duration >= 0).accept(builder::duration)
+                        .next().parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance)
+                        .next().optional("![]").parseAs(Integer::parseInt).validateList(DimensionManager::isDimensionRegistered).blockList(builder::blockDimensions).acceptList(builder::dimension);
+            } catch (StringConfigException exception) {
+                ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
+            }
+            this.mobAttacks.put(entity.get(), builder.build());
         }
-        return true;
+    }
+
+    private static boolean isEntityValid(ResourceLocation entity) {
+        return Utils.doesEntityExist(entity);
     }
 }

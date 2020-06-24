@@ -1,4 +1,4 @@
-package quarris.rotm.config;
+package quarris.rotm.config.types;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
@@ -40,7 +40,7 @@ public class DeathSpawnType {
         return sb.toString();
     }
 
-    static class Builder {
+    public static class Builder {
         public ResourceLocation summon;   // Entity being summoned
         public int minSpawn;              // Minimum amount to spawn per cycle
         public int maxSpawn;              // Maximum amount to spawn per cycle
@@ -49,7 +49,7 @@ public class DeathSpawnType {
         public ResourceLocation sound;    // The sound to be played when the summon happens
         public NBTTagCompound nbt;
 
-        public Builder() { }
+        Builder() { }
 
         public Builder summon(ResourceLocation summon) {
             this.summon = summon;

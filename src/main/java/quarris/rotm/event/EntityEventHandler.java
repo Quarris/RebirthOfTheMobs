@@ -2,6 +2,7 @@ package quarris.rotm.event;
 
 import net.minecraft.entity.*;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundCategory;
@@ -17,8 +18,10 @@ import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import quarris.rotm.ROTM;
 import quarris.rotm.capability.SpawnSummonsCap;
 import quarris.rotm.config.ModConfigs;
+import quarris.rotm.config.types.MobAttackType;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Random;
 
 @Mod.EventBusSubscriber(modid = ROTM.MODID)
@@ -141,7 +144,21 @@ public class EntityEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void applyMeleeEffect(LivingAttackEvent event) {
-
+        if (!event.getEntityLiving().world.isRemote) {
+            EntityLivingBase entity = event.getEntityLiving();
+            Entity attacker = event.getSource().getTrueSource();
+            if (attacker != null) {
+                Collection<MobAttackType> attackTypes = ModConfigs.entityConfigs.mobAttacks.get(EntityList.getKey(attacker));
+                System.out.println(attackTypes);
+                for (MobAttackType type : attackTypes) {
+                    if (type.canApplyToEntity(entity)) {
+                        System.out.println("Applying Effect");
+                        PotionEffect effect = new PotionEffect(ForgeRegistries.POTIONS.getValue(type.potion), type.duration, type.level);
+                        entity.addPotionEffect(effect);
+                    }
+                }
+            }
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.LOW)
