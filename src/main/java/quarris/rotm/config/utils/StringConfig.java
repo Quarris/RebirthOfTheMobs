@@ -25,7 +25,7 @@ public class StringConfig {
         this.args = args.split(";");
 
         this.outOfArgsException = (index) -> new StringConfigException("Tried to get argument at [" + index + "] which does not exist in '" + Arrays.toString(this.args) + "'");
-        this.converterException = (index) -> new StringConfigException("Expected a different type of value at [" + index + "] but instead got '" + this.args[index] + "'");
+        this.converterException = (index) -> new StringConfigException("Expected a different type of value at [" + index + "] but instead got '" + (this.args.length >= index ? "null" : this.args[index]) + "'");
         this.invalidArgumentException = (index) -> new StringConfigException("Could not validate argument '" + this.args[index] + "' at [" + index + "]");
         this.parseRestException = new StringConfigException("Attempted to parse next after parsing remaining");
     }
@@ -73,7 +73,11 @@ public class StringConfig {
             return this;
         }
 
-        throw invalidArgumentException.apply(this.argIndex);
+        if (!this.lastOptional) {
+            throw invalidArgumentException.apply(this.argIndex);
+        }
+        this.lastOptionalSucceeded = false;
+        return this;
     }
 
     public final <T> StringConfig validateRange(BiPredicate<T, T> predicate) throws StringConfigException {
@@ -161,6 +165,7 @@ public class StringConfig {
                 if (!this.lastOptional) {
                     throw this.converterException.apply(this.argIndex);
                 }
+                this.lastOptionalSucceeded = false;
                 return Collections.emptyList();
             }
         }
@@ -201,10 +206,12 @@ public class StringConfig {
                 throw this.outOfArgsException.apply(index);
             }
             raw = (String) this.defaultOptional;
+            this.lastOptionalSucceeded = false;
         }
 
         if (!(raw.endsWith("]") && (raw.startsWith("[") || raw.startsWith("!") && raw.charAt(1) == '['))) {
             raw = (String) this.defaultOptional;
+            this.lastOptionalSucceeded = false;
         }
 
         return raw;

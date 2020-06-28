@@ -6,9 +6,10 @@ import net.minecraft.util.ResourceLocation;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MobAttackType {
+public class MobDefenseType {
 
     public ResourceLocation potion;
+    public String damageType;
     public int level;
     public int duration;
     public float health;
@@ -16,7 +17,7 @@ public class MobAttackType {
     public List<Integer> dimensions;
     public boolean blockDimensions;
 
-    public MobAttackType(ResourceLocation potion, int level, int duration, float health, float chance, List<Integer> dimensions, boolean blockDimensions) {
+    public MobDefenseType(ResourceLocation potion, int level, int duration, float health, float chance, List<Integer> dimensions, boolean blockDimensions, String damageType) {
         this.potion = potion;
         this.level = level;
         this.duration = duration;
@@ -24,6 +25,7 @@ public class MobAttackType {
         this.chance = chance;
         this.dimensions = dimensions;
         this.blockDimensions = blockDimensions;
+        this.damageType = damageType;
     }
 
     public boolean canApplyToEntity(EntityLivingBase entity) {
@@ -47,12 +49,14 @@ public class MobAttackType {
         sb.append(", chance=").append(chance);
         sb.append(", dimensions=").append(dimensions);
         sb.append(", blockDimensions=").append(blockDimensions);
+        sb.append(", damageType=").append(damageType);
         sb.append('}');
         return sb.toString();
     }
 
     public static class Builder {
         public ResourceLocation potion;
+        public String damageType;
         public int level;
         public int duration;
         public float health;
@@ -99,8 +103,13 @@ public class MobAttackType {
             return this;
         }
 
-        public MobAttackType build() {
-            return new MobAttackType(this.potion, this.level, this.duration, this.health, this.chance, this.dimensions, this.blockDimensions);
+        public Builder damageType(String damageType) {
+            this.damageType = damageType;
+            return this;
+        }
+
+        public MobDefenseType build() {
+            return new MobDefenseType(this.potion, this.level, this.duration, this.health, this.chance, this.dimensions, this.blockDimensions, this.damageType);
         }
     }
 }

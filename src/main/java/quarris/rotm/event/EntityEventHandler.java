@@ -18,10 +18,10 @@ import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import quarris.rotm.ROTM;
 import quarris.rotm.capability.SpawnSummonsCap;
 import quarris.rotm.config.ModConfigs;
-import quarris.rotm.config.types.MobAttackType;
+import quarris.rotm.config.types.MobOffenseType;
+import quarris.rotm.config.types.MobDefenseType;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Random;
 
 @Mod.EventBusSubscriber(modid = ROTM.MODID)
@@ -143,16 +143,15 @@ public class EntityEventHandler {
     }
 
     @SubscribeEvent(priority = EventPriority.LOW)
-    public static void applyMeleeEffect(LivingAttackEvent event) {
+    public static void applyMobOffenseEffect(LivingHurtEvent event) {
         if (!event.getEntityLiving().world.isRemote) {
             EntityLivingBase entity = event.getEntityLiving();
+            DamageSource source = event.getSource();
             Entity attacker = event.getSource().getTrueSource();
             if (attacker != null) {
-                Collection<MobAttackType> attackTypes = ModConfigs.entityConfigs.mobAttacks.get(EntityList.getKey(attacker));
-                System.out.println(attackTypes);
-                for (MobAttackType type : attackTypes) {
-                    if (type.canApplyToEntity(entity)) {
-                        System.out.println("Applying Effect");
+                Collection<MobOffenseType> offenseTypes = ModConfigs.entityConfigs.mobOffense.get(EntityList.getKey(attacker));
+                for (MobOffenseType type : offenseTypes) {
+                    if (type.canApplyToEntity(entity) && (type.damageType.isEmpty() || type.damageType.equalsIgnoreCase(source.getDamageType()))) {
                         PotionEffect effect = new PotionEffect(ForgeRegistries.POTIONS.getValue(type.potion), type.duration, type.level);
                         entity.addPotionEffect(effect);
                     }
@@ -162,8 +161,20 @@ public class EntityEventHandler {
     }
 
     @SubscribeEvent(priority = EventPriority.LOW)
-    public static void applyMeleeDefenseEffect(LivingHurtEvent event) {
-
+    public static void applyMobDefenseEffect(LivingHurtEvent event) {
+        if (!event.getEntityLiving().world.isRemote) {
+            EntityLivingBase entity = event.getEntityLiving();
+            DamageSource source = event.getSource();
+            if (source.getTrueSource() != null) {
+                Collection<MobDefenseType> defenseTypes = ModConfigs.entityConfigs.mobDefenses.get(EntityList.getKey(entity));
+                for (MobDefenseType type : defenseTypes) {
+                    if (type.canApplyToEntity(entity) && (type.damageType.isEmpty() || type.damageType.equalsIgnoreCase(source.getDamageType()))) {
+                        PotionEffect effect = new PotionEffect(ForgeRegistries.POTIONS.getValue(type.potion), type.duration, type.level);
+                        entity.addPotionEffect(effect);
+                    }
+                }
+            }
+        }
     }
 
     @SubscribeEvent

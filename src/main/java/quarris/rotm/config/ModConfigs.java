@@ -33,8 +33,8 @@ public class ModConfigs {
 
     public static void updateConfigs() {
         ROTM.logger.info("Updating configs for {}", ROTM.NAME);
-        debugConfigs.onConfigChanged();
         entityConfigs.onConfigChanged();
+        debugConfigs.onConfigChanged();
     }
 
     @Mod.EventBusSubscriber(modid = ROTM.MODID)

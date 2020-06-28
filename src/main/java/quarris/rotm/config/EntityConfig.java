@@ -11,7 +11,8 @@ import net.minecraftforge.common.config.Config;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import quarris.rotm.ROTM;
 import quarris.rotm.config.types.DeathSpawnType;
-import quarris.rotm.config.types.MobAttackType;
+import quarris.rotm.config.types.MobOffenseType;
+import quarris.rotm.config.types.MobDefenseType;
 import quarris.rotm.config.types.SummonSpawnType;
 import quarris.rotm.config.utils.StringConfig;
 import quarris.rotm.config.utils.StringConfigException;
@@ -89,22 +90,41 @@ public class EntityConfig implements ISubConfig {
     @Config.Ignore
     public final Multimap<ResourceLocation, DeathSpawnType> deathSpawns = HashMultimap.create();
 
-    @Config.Name("Mob Melee")
+    @Config.Name("Mob Offense")
     @Config.Comment({
-            "Mob Melee allows to apply potions effects when a mob damages you in a close combat",
-            "Format: <modid:entity>;<potionEffect>;<health>;<potionLevel>;<potionDuration>;<chance>;?<dimension>",
+            "Mob Offense allows to apply potions effects when a mob damages another entity.",
+            "Format: <modid:entity>;<potionEffect>;<health>;<potionLevel>;<potionDuration>;<chance>;?<dimension>;?<damageType>",
             "Where: <modid:entity> is the entity that does the melee.",
             "<potionEffect> is the name of the potion effect to use.",
             "<health> is the percentage (0-100 exclusive-inclusive) that the entity has to be at to apply the effect.",
             "<potionLevel> is the tier of the potion starting at 0. For example, Poison I has level 0, Speed II has level 1.",
             "<potionDuration> is the duration in seconds of the potion.",
             "<chance> is the percentage (0-100 exclusive-inclusive) chance that the effect will take place on attack.",
-            "?<dimension> is an optional list of dimension ids in which the effect can/cannot be applied in. This takes form of '[1, -1, 2, 3, ...]'. You can prefix this list with '!' to turn it into a list of dimensions to block instead. For example '![0]' would block only the Overworld."
+            "?<dimension> is an optional list of dimension ids in which the effect can/cannot be applied in. This takes form of '[1, -1, 2, 3, ...]'. You can prefix this list with '!' to turn it into a list of dimensions to block instead. For example '![0]' would block only the Overworld.",
+            "?<damageType> is the kind of damage that this is triggered by. Leaving this empty results in every damage counting, 'mob' results in melee only, 'arrow' results in an arrow shot etc."
     })
-    public String[] rawMobAttacks = new String[]{};
+    public String[] rawMobOffense = new String[]{};
 
     @Config.Ignore
-    public final Multimap<ResourceLocation, MobAttackType> mobAttacks = HashMultimap.create();
+    public final Multimap<ResourceLocation, MobOffenseType> mobOffense = HashMultimap.create();
+
+    @Config.Name("Mob Defense")
+    @Config.Comment({
+            "Mob Defense allows to apply potions effects to the attacker when a mob takes damage.",
+            "Format: <modid:entity><potionEffect>;<health>;<potionLevel>;<potionDuration>;<chance>;?<dimension>;?<damageType>",
+            "Where: <modid:entity> is the entity that takes damage.",
+            "<potionEffect> is the name of the potion effect to use.",
+            "<health> is the percentage (0-100 exclusive-inclusive) that the entity has to be at to apply the effect.",
+            "<potionLevel> is the tier of the potion starting at 0. For example, Poison I has level 0, Speed II has level 1.",
+            "<potionDuration> is the duration in seconds of the potion.",
+            "<chance> is the percentage (0-100 exclusive-inclusive) chance that the effect will take place on attack.",
+            "?<dimension> is an optional list of dimension ids in which the effect can/cannot be applied in. This takes form of '[1, -1, 2, 3, ...]'. You can prefix this list with '!' to turn it into a list of dimensions to block instead. For example '![0]' would block only the Overworld.",
+            "?<damageType> is the kind of damage that this is triggered by. Leaving this empty results in every damage counting, 'mob' results in melee only, 'arrow' results in an arrow shot etc."
+    })
+    public String[] rawMobDefenses = new String[]{};
+
+    @Config.Ignore
+    public final Multimap<ResourceLocation, MobDefenseType> mobDefenses = HashMultimap.create();
 
     @Override
     public void onConfigChanged() {
@@ -112,7 +132,10 @@ public class EntityConfig implements ISubConfig {
         this.updateDamageSourceConfigs();
         this.updateSummonSpawnConfigs();
         this.updateDeathSpawnsConfig();
-        this.updateMobAttacksConfigs();
+        this.updateMobOffensesConfigs();
+        this.updateMobDefensesConfigs();
+
+        System.out.println(this.mobDefenses);
     }
 
     private void updatePotionsConfig() {
@@ -223,11 +246,11 @@ public class EntityConfig implements ISubConfig {
         }
     }
 
-    private void updateMobAttacksConfigs() {
-        this.mobAttacks.clear();
-        for (String s : this.rawMobAttacks) {
+    private void updateMobOffensesConfigs() {
+        this.mobOffense.clear();
+        for (String s : this.rawMobOffense) {
             Settable<ResourceLocation> entity = Settable.create();
-            MobAttackType.Builder builder = MobAttackType.builder();
+            MobOffenseType.Builder builder = MobOffenseType.builder();
             try {
                 new StringConfig(s)
                         .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(entity::set)
@@ -236,11 +259,34 @@ public class EntityConfig implements ISubConfig {
                         .next().parseAs(Integer::parseInt).<Integer>validate(level -> level >= 0).accept(builder::level)
                         .next().parseAs(Integer::parseInt).<Integer>validate(duration -> duration >= 0).accept(builder::duration)
                         .next().parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance)
-                        .next().optional("![]").parseAs(Integer::parseInt).validateList(DimensionManager::isDimensionRegistered).blockList(builder::blockDimensions).acceptList(builder::dimension);
+                        .next().optional("![]").parseAs(Integer::parseInt).validateList(DimensionManager::isDimensionRegistered).blockList(builder::blockDimensions).acceptList(builder::dimension)
+                        .next().optional("").accept(builder::damageType);
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
-            this.mobAttacks.put(entity.get(), builder.build());
+            this.mobOffense.put(entity.get(), builder.build());
+        }
+    }
+
+    private void updateMobDefensesConfigs() {
+        this.mobDefenses.clear();
+        for (String s : this.rawMobDefenses) {
+            Settable<ResourceLocation> entity = Settable.create();
+            MobDefenseType.Builder builder = MobDefenseType.builder();
+            try {
+                new StringConfig(s)
+                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(entity::set)
+                        .next().parseAs(ResourceLocation::new).validate(ForgeRegistries.POTIONS::containsKey).accept(builder::potion)
+                        .next().parseAs(Float::parseFloat).<Float>validate(health -> health > 0 && health <= 100).accept(builder::health)
+                        .next().parseAs(Integer::parseInt).<Integer>validate(level -> level >= 0).accept(builder::level)
+                        .next().parseAs(Integer::parseInt).<Integer>validate(duration -> duration >= 0).accept(builder::duration)
+                        .next().parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance)
+                        .next().optional("![]").parseAs(Integer::parseInt).validateList(DimensionManager::isDimensionRegistered).blockList(builder::blockDimensions).acceptList(builder::dimension)
+                        .next().optional("").accept(builder::damageType);
+            } catch (StringConfigException exception) {
+                ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
+            }
+            this.mobDefenses.put(entity.get(), builder.build());
         }
     }
 
