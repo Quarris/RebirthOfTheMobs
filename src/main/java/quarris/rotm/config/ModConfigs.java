@@ -35,6 +35,7 @@ public class ModConfigs {
         ROTM.logger.info("Updating configs for {}", ROTM.NAME);
         entityConfigs.onConfigChanged();
         debugConfigs.onConfigChanged();
+        vehicleConfigs.onConfigChanged();
     }
 
     @Mod.EventBusSubscriber(modid = ROTM.MODID)

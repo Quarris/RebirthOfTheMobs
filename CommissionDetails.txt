@@ -5,19 +5,19 @@ Features
 
 RotN Mods
 ---------
-Rough Mobs Revamp Addon (total 7 hours)
+[X] Rough Mobs Revamp Addon (total 7 hours)
 	[X] Complete Immunity Customisation (1 hour)
-	- Aggrospawn (3 hours)
-	- Deathspawn (2 hours)
-	- Mob Melee Effects (30 minutes)
-	- Mob Defense Effects (30 minutes)
+	[X] Aggrospawn (3 hours)
+	[X Deathspawn (2 hours)
+	[X] Mob Melee Effects (30 minutes)
+	[X] Mob Defense Effects (30 minutes)
 
-Ride or Die (total 1 hour 30 minutes)
+[X] Ride or Die (total 1 hour 30 minutes)
 	- Default behaviour (30 minutes)
 	- Might not be fully compatible with modded entities, depending how the mods implement their own boats and minecarts
 		- Potential solution with a config for the boat/minecart entity (1 hour)
 
-Bad News Bossrush (total 1 hours)
+[X] Bad News Bossrush (total 1 hours)
 
 Swim Speed (total 2 hours)
 

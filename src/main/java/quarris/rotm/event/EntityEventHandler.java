@@ -1,12 +1,15 @@
 package quarris.rotm.event;
 
-import net.minecraft.entity.*;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityList;
+import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldEntitySpawner;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.entity.living.*;
@@ -18,23 +21,26 @@ import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import quarris.rotm.ROTM;
 import quarris.rotm.capability.SpawnSummonsCap;
 import quarris.rotm.config.ModConfigs;
-import quarris.rotm.config.types.MobOffenseType;
+import quarris.rotm.config.types.HealthRegainType;
 import quarris.rotm.config.types.MobDefenseType;
+import quarris.rotm.config.types.MobOffenseType;
+import quarris.rotm.utils.Utils;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 @Mod.EventBusSubscriber(modid = ROTM.MODID)
 public class EntityEventHandler {
 
-    public static final ResourceLocation PLAYER_RES = new ResourceLocation("player");
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void cancelPotionApply(PotionEvent.PotionApplicableEvent event) {
         EntityLivingBase entity = event.getEntityLiving();
         if (!entity.world.isRemote) {
             Collection<ResourceLocation> potionsToCancel = ModConfigs.entityConfigs.potionsToCancel
-                    .get(entity instanceof EntityPlayer ? PLAYER_RES : EntityList.getKey(entity));
+                    .get(Utils.getEntityName(entity));
 
             if (potionsToCancel.contains(event.getPotionEffect().getPotion().getRegistryName())) {
                 event.setResult(Event.Result.DENY);
@@ -49,7 +55,7 @@ public class EntityEventHandler {
             DamageSource source = event.getSource();
 
             Collection<String> sourcesToCancel = ModConfigs.entityConfigs.damagesToCancel
-                    .get(entity instanceof EntityPlayer ? PLAYER_RES : EntityList.getKey(entity));
+                    .get(Utils.getEntityName(entity));
 
             if (sourcesToCancel.contains(source.getDamageType())) {
                 event.setCanceled(true);
@@ -95,7 +101,7 @@ public class EntityEventHandler {
             return;
 
         EntityLivingBase entity = event.getEntityLiving();
-        ModConfigs.entityConfigs.deathSpawns.get(EntityList.getKey(event.getEntityLiving())).stream()
+        ModConfigs.entityConfigs.deathSpawns.get(Utils.getEntityName(entity)).stream()
                 .forEach(spawn -> {
                     Random random = new Random();
                     int amount = spawn.minSpawn + random.nextInt(spawn.maxSpawn - spawn.minSpawn + 1);
@@ -130,7 +136,7 @@ public class EntityEventHandler {
                                     random.nextFloat() * 360.0F,
                                     0.0F);
 
-                            if (WorldEntitySpawner.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry.getPlacementForEntity(toSpawn.getClass()), entity.world, toSpawn.getPosition()) && entity.world.spawnEntity(toSpawn)) {
+                            if (isPositionValidForSpawning(entity.world, entityPos) && entity.world.spawnEntity(toSpawn)) {
                                 spawned = true;
                                 break;
                             }
@@ -149,7 +155,7 @@ public class EntityEventHandler {
             DamageSource source = event.getSource();
             Entity attacker = event.getSource().getTrueSource();
             if (attacker != null) {
-                Collection<MobOffenseType> offenseTypes = ModConfigs.entityConfigs.mobOffense.get(EntityList.getKey(attacker));
+                Collection<MobOffenseType> offenseTypes = ModConfigs.entityConfigs.mobOffense.get(Utils.getEntityName(entity));
                 for (MobOffenseType type : offenseTypes) {
                     if (type.canApplyToEntity(entity) && (type.damageType.isEmpty() || type.damageType.equalsIgnoreCase(source.getDamageType()))) {
                         PotionEffect effect = new PotionEffect(ForgeRegistries.POTIONS.getValue(type.potion), type.duration, type.level);
@@ -166,7 +172,7 @@ public class EntityEventHandler {
             EntityLivingBase entity = event.getEntityLiving();
             DamageSource source = event.getSource();
             if (source.getTrueSource() != null) {
-                Collection<MobDefenseType> defenseTypes = ModConfigs.entityConfigs.mobDefenses.get(EntityList.getKey(entity));
+                Collection<MobDefenseType> defenseTypes = ModConfigs.entityConfigs.mobDefenses.get(Utils.getEntityName(entity));
                 for (MobDefenseType type : defenseTypes) {
                     if (type.canApplyToEntity(entity) && (type.damageType.isEmpty() || type.damageType.equalsIgnoreCase(source.getDamageType()))) {
                         PotionEffect effect = new PotionEffect(ForgeRegistries.POTIONS.getValue(type.potion), type.duration, type.level);
@@ -177,10 +183,44 @@ public class EntityEventHandler {
         }
     }
 
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void applyHealthRegain(LivingDeathEvent event) {
+        World world = event.getEntityLiving().world;
+        if (world.isRemote)
+            return;
+
+        EntityLivingBase dead = event.getEntityLiving();
+        List<EntityLivingBase> loaded = world.getLoadedEntityList().stream()
+                .filter(entity -> entity instanceof EntityLivingBase)
+                .map(entity -> (EntityLivingBase) entity)
+                .collect(Collectors.toList());
+
+        for (EntityLivingBase entity : loaded) {
+           List<HealthRegainType> types = ModConfigs.entityConfigs.healthRegains.get(EntityList.getKey(entity)).stream().filter(type -> type.target == null || type.target.equals(Utils.getEntityName(dead))).collect(Collectors.toList());
+           for (HealthRegainType type : types) {
+               if (type.radius <= 0 || dead.getDistanceSq(entity) <= type.radius * type.radius) {
+                   if (!type.lastManStanding || loaded.stream().filter(e -> e != null && Utils.getEntityName(e).equals(type.target)).count() == 1) {
+                       float health = entity.getHealth();
+                       entity.heal(entity.getMaxHealth() * type.healthPercentage);
+                       ROTM.logger.info("Healed {} from {} to {}", entity.getDisplayName().getFormattedText(), health, entity.getHealth());
+                   }
+               }
+           }
+        }
+    }
+
     @SubscribeEvent
     public static void attachCapabilities(AttachCapabilitiesEvent<Entity> event) {
-        if (event.getObject() instanceof EntityLivingBase && ModConfigs.entityConfigs.summonSpawns.keySet().contains(EntityList.getKey(event.getObject()))) {
+        if (event.getObject() instanceof EntityLivingBase && ModConfigs.entityConfigs.summonSpawns.keySet().contains(Utils.getEntityName(event.getObject()))) {
             event.addCapability(new ResourceLocation(ROTM.MODID, "summonspawn"), new SpawnSummonsCap((EntityLivingBase) event.getObject()));
+        }
+    }
+
+    public static boolean isPositionValidForSpawning(World world, BlockPos pos) {
+        if (!world.getWorldBorder().contains(pos)) {
+            return false;
+        } else {
+            return WorldEntitySpawner.isValidEmptySpawnBlock(world.getBlockState(pos)) && WorldEntitySpawner.isValidEmptySpawnBlock(world.getBlockState(pos.up()));
         }
     }
 }

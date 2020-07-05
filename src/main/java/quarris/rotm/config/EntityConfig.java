@@ -10,10 +10,7 @@ import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import quarris.rotm.ROTM;
-import quarris.rotm.config.types.DeathSpawnType;
-import quarris.rotm.config.types.MobOffenseType;
-import quarris.rotm.config.types.MobDefenseType;
-import quarris.rotm.config.types.SummonSpawnType;
+import quarris.rotm.config.types.*;
 import quarris.rotm.config.utils.StringConfig;
 import quarris.rotm.config.utils.StringConfigException;
 import quarris.rotm.utils.Settable;
@@ -54,6 +51,7 @@ public class EntityConfig implements ISubConfig {
     @Config.Ignore
     public final Multimap<ResourceLocation, String> damagesToCancel = HashMultimap.create();
 
+    // TODO: add optional config for spawn radius
     @Config.Name("Summon Spawns")
     @Config.Comment({
             "Summon Spawns allows mobs to be summoned when an entity has a target and reaches a certain health.",
@@ -75,6 +73,7 @@ public class EntityConfig implements ISubConfig {
     @Config.Ignore
     public final Multimap<ResourceLocation, SummonSpawnType> summonSpawns = HashMultimap.create();
 
+    // TODO: add optional config for spawn radius
     @Config.Name("Death Spawns")
     @Config.Comment({
             "Death Spawns allows mobs to be summoned when an entity dies.",
@@ -126,6 +125,21 @@ public class EntityConfig implements ISubConfig {
     @Config.Ignore
     public final Multimap<ResourceLocation, MobDefenseType> mobDefenses = HashMultimap.create();
 
+    @Config.Name("Instant Health Regain")
+    @Config.Comment({
+            "Allows entities to regain health after killing enemies of certain target type",
+            "Format: <modid:entity>;?<modid:target>;<healthPercentage>;<lastManStanding>;?<radius>",
+            "Where: <modid:entity> is the entity which will regain health.",
+            "?<modid:target> is the optional target entity which has to die in the region for the health regain to occur. If left empty, any entity which dies will count as a target",
+            "<healthPercentage> is the health percentage (0-100 inclusive) of the 'entity's max health which will be regained.",
+            "<lastManStanding> is a true/false value. If true, then the health regain will only happen if last target type has died nearby.",
+            "?<radius> is an optional value representing the distance range to check. If left empty or <= 0 then the area is turned global and will check all loaded entities of the target type"
+    })
+    public String[] rawHealthRegains = new String[]{};
+
+    @Config.Ignore
+    public Multimap<ResourceLocation, HealthRegainType> healthRegains = HashMultimap.create();
+
     @Override
     public void onConfigChanged() {
         this.updatePotionsConfig();
@@ -134,8 +148,7 @@ public class EntityConfig implements ISubConfig {
         this.updateDeathSpawnsConfig();
         this.updateMobOffensesConfigs();
         this.updateMobDefensesConfigs();
-
-        System.out.println(this.mobDefenses);
+        this.updateHealthRegain();
     }
 
     private void updatePotionsConfig() {
@@ -145,7 +158,7 @@ public class EntityConfig implements ISubConfig {
             Settable<ResourceLocation> entity = Settable.create();
             try {
                 new StringConfig(s)
-                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(entity::set)
+                        .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(entity::set)
                         .rest().parseAs(ResourceLocation::new).validate(ForgeRegistries.POTIONS::containsKey).<ResourceLocation>accept(potions::add);
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
@@ -162,7 +175,7 @@ public class EntityConfig implements ISubConfig {
             Settable<ResourceLocation> entity = Settable.create();
             try {
                 new StringConfig(s)
-                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(entity::set)
+                        .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(entity::set)
                         .rest().<String>accept(damages::add);
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
@@ -180,8 +193,8 @@ public class EntityConfig implements ISubConfig {
 
             try {
                 new StringConfig(s)
-                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(masterSetter::set)
-                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(builder::summon)
+                        .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(masterSetter::set)
+                        .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(builder::summon)
                         .next().parseAs(Float::parseFloat).<Float>validate(i -> (i >= 0.0 && i <= 100.0)).accept(builder::health)
                         .next().parseAs(Integer::parseInt).<Integer>validateRange((min, max) -> min <= max).acceptRange(builder::minSpawn, builder::maxSpawn)
                         .next().parseAs(Integer::parseInt).<Integer>validateRange((min, max) -> min <= max).acceptRange(builder::minCooldown, builder::maxCooldown)
@@ -223,8 +236,8 @@ public class EntityConfig implements ISubConfig {
 
             try {
                 new StringConfig(s)
-                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(masterSetter::set)
-                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(builder::summon)
+                        .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(masterSetter::set)
+                        .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(builder::summon)
                         .next().parseAs(Integer::parseInt).<Integer>validateRange((min, max) -> min <= max).acceptRange(builder::minSpawn, builder::maxSpawn)
                         .next().parseAs(Boolean::parseBoolean).accept(builder::disableXP)
                         .next().parseAs(Boolean::parseBoolean).accept(builder::disableLoot)
@@ -253,7 +266,7 @@ public class EntityConfig implements ISubConfig {
             MobOffenseType.Builder builder = MobOffenseType.builder();
             try {
                 new StringConfig(s)
-                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(entity::set)
+                        .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(entity::set)
                         .next().parseAs(ResourceLocation::new).validate(ForgeRegistries.POTIONS::containsKey).accept(builder::potion)
                         .next().parseAs(Float::parseFloat).<Float>validate(health -> health > 0 && health <= 100).accept(builder::health)
                         .next().parseAs(Integer::parseInt).<Integer>validate(level -> level >= 0).accept(builder::level)
@@ -275,7 +288,7 @@ public class EntityConfig implements ISubConfig {
             MobDefenseType.Builder builder = MobDefenseType.builder();
             try {
                 new StringConfig(s)
-                        .next().parseAs(ResourceLocation::new).validate(EntityConfig::isEntityValid).accept(entity::set)
+                        .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(entity::set)
                         .next().parseAs(ResourceLocation::new).validate(ForgeRegistries.POTIONS::containsKey).accept(builder::potion)
                         .next().parseAs(Float::parseFloat).<Float>validate(health -> health > 0 && health <= 100).accept(builder::health)
                         .next().parseAs(Integer::parseInt).<Integer>validate(level -> level >= 0).accept(builder::level)
@@ -290,7 +303,22 @@ public class EntityConfig implements ISubConfig {
         }
     }
 
-    private static boolean isEntityValid(ResourceLocation entity) {
-        return Utils.doesEntityExist(entity);
+    private void updateHealthRegain() {
+        this.healthRegains.clear();
+        for (String s : this.rawHealthRegains) {
+            Settable<ResourceLocation> entity = Settable.create();
+            HealthRegainType.Builder builder = HealthRegainType.builder();
+            try {
+                new StringConfig(s)
+                        .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(entity::set)
+                        .next().optional(null).parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(builder::target)
+                        .next().parseAs(Float::parseFloat).<Float>validate(health -> health > 0 && health <= 100).accept(builder::healthPercentage)
+                        .next().parseAs(Boolean::parseBoolean).accept(builder::lastManStanding)
+                        .next().optional(0).parseAs(Float::parseFloat).accept(builder::radius);
+            } catch (StringConfigException exception) {
+                ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
+            }
+            this.healthRegains.put(entity.get(), builder.build());
+        }
     }
 }
