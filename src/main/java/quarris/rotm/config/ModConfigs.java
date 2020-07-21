@@ -19,9 +19,17 @@ public class ModConfigs {
     public static EntityConfig entityConfigs = new EntityConfig();
 
     @Config.Name("Vehicle Configurations")
+    @Config.Comment({
+            "These configs related to the use of entities as vehicles, such as minecarts or boats.",
+            "For the player use \"minecraft:player\""
+    })
     public static VehicleConfig vehicleConfigs = new VehicleConfig();
 
     @Config.Name("Miscellaneous Configurations")
+    @Config.Comment({
+            "These are misc configs.",
+            "For the player use \"minecraft:player\""
+    })
     public static MiscConfig miscConfigs = new MiscConfig();
 
     @Config.Name("Debug Configurations")
@@ -36,6 +44,7 @@ public class ModConfigs {
         entityConfigs.onConfigChanged();
         debugConfigs.onConfigChanged();
         vehicleConfigs.onConfigChanged();
+        miscConfigs.onConfigChanged();
     }
 
     @Mod.EventBusSubscriber(modid = ROTM.MODID)

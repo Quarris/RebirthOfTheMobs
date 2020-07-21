@@ -11,7 +11,6 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldEntitySpawner;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityInject;
 import net.minecraftforge.common.capabilities.CapabilityManager;
@@ -21,6 +20,7 @@ import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import quarris.rotm.config.ModConfigs;
 import quarris.rotm.config.types.SummonSpawnType;
+import quarris.rotm.utils.Utils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -166,7 +166,7 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
             }
         }
 
-        public void setRandomCooldownAt(long time) {
+        public void setRandomCooldownFrom(long time) {
             long cooldown = this.entry.minCooldownTicks + this.random.nextInt(this.entry.maxCooldownTicks - this.entry.minCooldownTicks + 1);
             this.nextSpawnTime = time + cooldown;
         }
@@ -174,7 +174,7 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
         public void updateSummonList() {
             for (int i = this.summonedEntities.size() - 1; i >= 0; i--) {
                 UUID summonedUUID = this.summonedEntities.get(i);
-                if (!SpawnSummonsCap.this.entity.world.getLoadedEntityList().stream().anyMatch(e -> summonedUUID.equals(e.getUniqueID()))) {
+                if (!SpawnSummonsCap.this.entity.world.loadedEntityList.stream().anyMatch(e -> summonedUUID.equals(e.getUniqueID()))) {
                     this.summonedEntities.remove(i);
                 }
             }
@@ -214,7 +214,7 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
                                 this.random.nextFloat() * 360.0F,
                                 0.0F);
 
-                        if (WorldEntitySpawner.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry.getPlacementForEntity(toSpawn.getClass()), master.world, toSpawn.getPosition()) && master.world.spawnEntity(toSpawn)) {
+                        if (!Utils.isEntityInCollision(master.world, toSpawn) && master.world.spawnEntity(toSpawn)) {
                             spawned = true;
                             this.summonedEntities.add(toSpawn.getUniqueID());
                             this.totalSpawned++;
@@ -224,14 +224,14 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
                 }
                 if (spawned) {
                     master.world.playSound(null, master.getPosition(), ForgeRegistries.SOUND_EVENTS.getValue(this.entry.sound), SoundCategory.HOSTILE, 1, 1);
-                    this.setRandomCooldownAt(master.world.getTotalWorldTime());
+                    this.setRandomCooldownFrom(master.world.getTotalWorldTime());
                 }
             }
         }
 
         public void despawnSummons() {
             EntityLivingBase master = SpawnSummonsCap.this.entity;
-            master.world.getLoadedEntityList().stream()
+            master.world.loadedEntityList.stream()
                     .filter(e -> this.summonedEntities.contains(e.getUniqueID()))
                     .forEach(Entity::setDead);
         }

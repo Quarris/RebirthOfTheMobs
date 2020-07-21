@@ -190,7 +190,7 @@ public class EntityEventHandler {
             return;
 
         EntityLivingBase dead = event.getEntityLiving();
-        List<EntityLivingBase> loaded = world.getLoadedEntityList().stream()
+        List<EntityLivingBase> loaded = world.loadedEntityList.stream()
                 .filter(entity -> entity instanceof EntityLivingBase)
                 .map(entity -> (EntityLivingBase) entity)
                 .collect(Collectors.toList());
