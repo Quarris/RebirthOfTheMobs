@@ -1,21 +1,16 @@
 package quarris.rotm;
 
-import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.client.event.ModelRegistryEvent;
-import net.minecraftforge.client.model.ModelLoader;
-import net.minecraftforge.client.model.ModelLoaderRegistry;
-import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.ModContainerFactory;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
+import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -23,24 +18,28 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.logging.log4j.Logger;
 import quarris.rotm.capability.SpawnSummonsCap;
 import quarris.rotm.commands.CommandDumpRegistry;
 import quarris.rotm.config.ModConfigs;
-import quarris.rotm.event.MiscEventHandler;
 import quarris.rotm.items.ItemDebug;
 import quarris.rotm.items.ModItems;
+import quarris.rotm.proxy.CommonProxy;
 import quarris.rotm.utils.Utils;
 
 import java.util.function.BiPredicate;
 
-@Mod(modid = ROTM.MODID, name = ROTM.NAME, version = ROTM.VERSION, guiFactory = "net.minecraftforge.client.gui.ForgeGuiFactory")
+@Mod(modid = ROTM.MODID, name = ROTM.NAME, version = ROTM.VERSION)
 public class ROTM {
     public static final String MODID = "rotm";
     public static final String NAME = "Rebirth of the Mobs";
-    public static final String VERSION = "1.0";
+    public static final String VERSION = "0.3";
 
     public static Logger logger;
+
+    @SidedProxy(clientSide = "quarris.rotm.proxy.ClientProxy", serverSide = "quarris.rotm.proxy.CommonProxy")
+    public static CommonProxy proxy;
 
     public ROTM() {
         ObfuscationReflectionHelper.setPrivateValue(EntityLiving.SpawnPlacementType.class, EntityLiving.SpawnPlacementType.ON_GROUND,
@@ -56,13 +55,12 @@ public class ROTM {
     @EventHandler
     public void init(FMLInitializationEvent event) {
         SpawnSummonsCap.register();
+        proxy.registerItemModels();
     }
 
     @EventHandler
     public void postInit(FMLPostInitializationEvent event) {
-        if (FMLCommonHandler.instance().getSide().isClient()) {
-            ModelLoader.setCustomModelResourceLocation(ModItems.debugDamages, 0, new ModelResourceLocation(ModItems.debugDamages.getRegistryName(), "inventory"));
-        }
+
     }
 
     @EventHandler
@@ -81,10 +79,18 @@ public class ROTM {
         public static void registerDebugItems(RegistryEvent.Register<Item> event) {
             if (ModConfigs.debugConfigs.enableDebugMode) {
                 event.getRegistry().registerAll(
-                        new ItemDebug().setRegistryName(new ResourceLocation(MODID, "debugDamages"))
+                        ModItems.debugDamages = new ItemDebug(ItemDebug.DebugType.DAMAGE).setRegistryName(new ResourceLocation(MODID, "debug_damages")).setUnlocalizedName("debug_damages"),
+                        ModItems.debugEntities = new ItemDebug(ItemDebug.DebugType.ENTITY).setRegistryName(new ResourceLocation(MODID, "debug_entities")).setUnlocalizedName("debug_entities"),
+                        ModItems.debugPotions = new ItemDebug(ItemDebug.DebugType.POTION).setRegistryName(new ResourceLocation(MODID, "debug_potions")).setUnlocalizedName("debug_potions")
                 );
             }
         }
 
+        @SideOnly(Side.CLIENT)
+        @SubscribeEvent
+        public static void registerItemModels(ModelRegistryEvent event) {
+            System.out.println("Registering Models");
+            proxy.registerItemModels();
+        }
     }
 }

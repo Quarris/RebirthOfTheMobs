@@ -3,7 +3,6 @@ package quarris.rotm.config;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.config.Config;
 import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import quarris.rotm.ROTM;
 import quarris.rotm.config.utils.StringConfig;
 import quarris.rotm.config.utils.StringConfigException;

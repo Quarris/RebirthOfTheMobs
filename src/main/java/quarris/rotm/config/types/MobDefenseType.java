@@ -14,15 +14,17 @@ public class MobDefenseType {
     public int duration;
     public float health;
     public float chance;
+    public ResourceLocation sound;
     public List<Integer> dimensions;
     public boolean blockDimensions;
 
-    public MobDefenseType(ResourceLocation potion, int level, int duration, float health, float chance, List<Integer> dimensions, boolean blockDimensions, String damageType) {
+    public MobDefenseType(ResourceLocation potion, int level, int duration, float health, float chance, ResourceLocation sound, List<Integer> dimensions, boolean blockDimensions, String damageType) {
         this.potion = potion;
         this.level = level;
         this.duration = duration;
         this.health = health;
         this.chance = chance;
+        this.sound = sound;
         this.dimensions = dimensions;
         this.blockDimensions = blockDimensions;
         this.damageType = damageType;
@@ -61,6 +63,7 @@ public class MobDefenseType {
         public int duration;
         public float health;
         public float chance;
+        public ResourceLocation sound;
         public List<Integer> dimensions;
         public boolean blockDimensions;
 
@@ -93,6 +96,11 @@ public class MobDefenseType {
             return this;
         }
 
+        public Builder sound(ResourceLocation sound) {
+            this.sound = sound;
+            return this;
+        }
+
         public Builder dimension(int dimId) {
             this.dimensions.add(dimId);
             return this;
@@ -109,7 +117,7 @@ public class MobDefenseType {
         }
 
         public MobDefenseType build() {
-            return new MobDefenseType(this.potion, this.level, this.duration, this.health, this.chance, this.dimensions, this.blockDimensions, this.damageType);
+            return new MobDefenseType(this.potion, this.level, this.duration, this.health, this.chance, this.sound, this.dimensions, this.blockDimensions, this.damageType);
         }
     }
 }

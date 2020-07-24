@@ -10,7 +10,6 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldEntitySpawner;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.entity.living.*;
 import net.minecraftforge.fml.common.Mod;
@@ -131,18 +130,18 @@ public class EntityEventHandler {
                         for (int j = 0; j < tries; j++) {
                             toSpawn.setLocationAndAngles(
                                     entityPos.getX() + random.nextFloat() * 8 - 4,
-                                    entityPos.getY() + random.nextInt(5) - 2,
+                                    entityPos.getY() + random.nextInt(5) - 1.5d,
                                     entityPos.getZ() + random.nextFloat() * 8 - 4,
                                     random.nextFloat() * 360.0F,
                                     0.0F);
 
-                            if (isPositionValidForSpawning(entity.world, entityPos) && entity.world.spawnEntity(toSpawn)) {
+                            if (isPositionValidForSpawningSummons(toSpawn, entityPos) && entity.world.spawnEntity(toSpawn)) {
                                 spawned = true;
                                 break;
                             }
                         }
                     }
-                    if (spawned) {
+                    if (spawned && spawn.sound != null) {
                         entity.world.playSound(null, entity.getPosition(), ForgeRegistries.SOUND_EVENTS.getValue(spawn.sound), SoundCategory.HOSTILE, 1, 1);
                     }
                 });
@@ -153,13 +152,17 @@ public class EntityEventHandler {
         if (!event.getEntityLiving().world.isRemote) {
             EntityLivingBase entity = event.getEntityLiving();
             DamageSource source = event.getSource();
-            Entity attacker = event.getSource().getTrueSource();
-            if (attacker != null) {
+            if (source.getTrueSource() instanceof EntityLivingBase) {
+                EntityLivingBase attacker = (EntityLivingBase) event.getSource().getTrueSource();
                 Collection<MobOffenseType> offenseTypes = ModConfigs.entityConfigs.mobOffense.get(Utils.getEntityName(entity));
+                System.out.println(offenseTypes);
                 for (MobOffenseType type : offenseTypes) {
                     if (type.canApplyToEntity(entity) && (type.damageType.isEmpty() || type.damageType.equalsIgnoreCase(source.getDamageType()))) {
                         PotionEffect effect = new PotionEffect(ForgeRegistries.POTIONS.getValue(type.potion), type.duration, type.level);
-                        entity.addPotionEffect(effect);
+                        attacker.addPotionEffect(effect);
+                        if (type.sound != null) {
+                            entity.world.playSound(null, entity.getPosition(), ForgeRegistries.SOUND_EVENTS.getValue(type.sound), SoundCategory.HOSTILE, 1, 1);
+                        }
                     }
                 }
             }
@@ -171,12 +174,16 @@ public class EntityEventHandler {
         if (!event.getEntityLiving().world.isRemote) {
             EntityLivingBase entity = event.getEntityLiving();
             DamageSource source = event.getSource();
-            if (source.getTrueSource() != null) {
+            if (source.getTrueSource() instanceof EntityLivingBase) {
+                EntityLivingBase attacker = (EntityLivingBase) source.getTrueSource();
                 Collection<MobDefenseType> defenseTypes = ModConfigs.entityConfigs.mobDefenses.get(Utils.getEntityName(entity));
                 for (MobDefenseType type : defenseTypes) {
                     if (type.canApplyToEntity(entity) && (type.damageType.isEmpty() || type.damageType.equalsIgnoreCase(source.getDamageType()))) {
                         PotionEffect effect = new PotionEffect(ForgeRegistries.POTIONS.getValue(type.potion), type.duration, type.level);
-                        entity.addPotionEffect(effect);
+                        attacker.addPotionEffect(effect);
+                        if (type.sound != null) {
+                            entity.world.playSound(null, entity.getPosition(), ForgeRegistries.SOUND_EVENTS.getValue(type.sound), SoundCategory.HOSTILE, 1, 1);
+                        }
                     }
                 }
             }
@@ -200,9 +207,7 @@ public class EntityEventHandler {
            for (HealthRegainType type : types) {
                if (type.radius <= 0 || dead.getDistanceSq(entity) <= type.radius * type.radius) {
                    if (!type.lastManStanding || loaded.stream().filter(e -> e != null && Utils.getEntityName(e).equals(type.target)).count() == 1) {
-                       float health = entity.getHealth();
                        entity.heal(entity.getMaxHealth() * type.healthPercentage);
-                       ROTM.logger.info("Healed {} from {} to {}", entity.getDisplayName().getFormattedText(), health, entity.getHealth());
                    }
                }
            }
@@ -216,11 +221,11 @@ public class EntityEventHandler {
         }
     }
 
-    public static boolean isPositionValidForSpawning(World world, BlockPos pos) {
-        if (!world.getWorldBorder().contains(pos)) {
+    public static boolean isPositionValidForSpawningSummons(Entity entity, BlockPos pos) {
+        if (!entity.world.getWorldBorder().contains(pos)) {
             return false;
         } else {
-            return WorldEntitySpawner.isValidEmptySpawnBlock(world.getBlockState(pos)) && WorldEntitySpawner.isValidEmptySpawnBlock(world.getBlockState(pos.up()));
+            return !Utils.isEntityInCollision(entity.world, entity);
         }
     }
 }

@@ -13,16 +13,18 @@ public class MobOffenseType {
     public int duration;
     public float health;
     public float chance;
+    public ResourceLocation sound;
     public List<Integer> dimensions;
     public boolean blockDimensions;
     public String damageType;
 
-    public MobOffenseType(ResourceLocation potion, int level, int duration, float health, float chance, List<Integer> dimensions, boolean blockDimensions, String damageType) {
+    public MobOffenseType(ResourceLocation potion, int level, int duration, float health, float chance, ResourceLocation sound, List<Integer> dimensions, boolean blockDimensions, String damageType) {
         this.potion = potion;
         this.level = level;
         this.duration = duration;
         this.health = health;
         this.chance = chance;
+        this.sound = sound;
         this.dimensions = dimensions;
         this.blockDimensions = blockDimensions;
         this.damageType = damageType;
@@ -47,6 +49,7 @@ public class MobOffenseType {
         sb.append(", duration=").append(duration);
         sb.append(", health=").append(health);
         sb.append(", chance=").append(chance);
+        sb.append(", sound=").append(sound);
         sb.append(", dimensions=").append(dimensions);
         sb.append(", blockDimensions=").append(blockDimensions);
         sb.append(", damageType=").append(damageType);
@@ -60,6 +63,7 @@ public class MobOffenseType {
         public int duration;
         public float health;
         public float chance;
+        public ResourceLocation sound;
         public List<Integer> dimensions;
         public boolean blockDimensions;
         public String damageType;
@@ -93,6 +97,11 @@ public class MobOffenseType {
             return this;
         }
 
+        public Builder sound(ResourceLocation sound) {
+            this.sound = sound;
+            return this;
+        }
+
         public Builder dimension(int dimId) {
             this.dimensions.add(dimId);
             return this;
@@ -109,7 +118,7 @@ public class MobOffenseType {
         }
 
         public MobOffenseType build() {
-            return new MobOffenseType(this.potion, this.level, this.duration, this.health, this.chance, this.dimensions, this.blockDimensions, this.damageType);
+            return new MobOffenseType(this.potion, this.level, this.duration, this.health, this.chance, this.sound, this.dimensions, this.blockDimensions, this.damageType);
         }
     }
 }

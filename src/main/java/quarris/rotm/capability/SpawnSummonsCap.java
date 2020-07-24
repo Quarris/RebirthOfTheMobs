@@ -2,7 +2,10 @@ package quarris.rotm.capability;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import net.minecraft.entity.*;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityList;
+import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -129,11 +132,14 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
         }
 
         public boolean canSpawn(World world, EntityLivingBase master) {
-            return master.getAttackingEntity() != null &&
-                    world.getTotalWorldTime() >= this.nextSpawnTime &&
+            if (world.getTotalWorldTime() >= this.nextSpawnTime &&
                     (master.getHealth() / master.getMaxHealth()) <= this.entry.health &&
                     (this.entry.bypassMaxSpawns || this.summonedEntities.size() < this.entry.maxSpawn) &&
-                    (this.entry.cap <= 0 || this.totalSpawned < this.entry.cap);
+                    (this.entry.cap <= 0 || this.totalSpawned < this.entry.cap)) {
+                return !(master instanceof EntityLiving) || ((EntityLiving) master).getAttackTarget() != null;
+            }
+
+            return false;
         }
 
         /**
@@ -223,7 +229,9 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
                     }
                 }
                 if (spawned) {
-                    master.world.playSound(null, master.getPosition(), ForgeRegistries.SOUND_EVENTS.getValue(this.entry.sound), SoundCategory.HOSTILE, 1, 1);
+                    if (this.entry.sound != null) {
+                        master.world.playSound(null, master.getPosition(), ForgeRegistries.SOUND_EVENTS.getValue(this.entry.sound), SoundCategory.HOSTILE, 1, 1);
+                    }
                     this.setRandomCooldownFrom(master.world.getTotalWorldTime());
                 }
             }

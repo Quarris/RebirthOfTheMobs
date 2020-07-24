@@ -51,22 +51,28 @@ public class EntityConfig implements ISubConfig {
     @Config.Ignore
     public final Multimap<ResourceLocation, String> damagesToCancel = HashMultimap.create();
 
-    // TODO: add optional config for spawn radius
     @Config.Name("Summon Spawns")
     @Config.Comment({
             "Summon Spawns allows mobs to be summoned when an entity has a target and reaches a certain health.",
-            "Format: <modid:master>;<modid:summon>;<healthPercentage>;<spawnRange>;<cooldownRange>;<bypass>;<despawnOnDeath>;<maxCap>;<disableXP>;<disableLoot>;<sound>;?<id>;?<nbt>",
+            "Format: <modid:master>;<modid:summon>;<healthPercentage>;<spawnRange>;<cooldownRange>;<bypass>;<despawnOnDeath>;<maxCap>;<disableXP>;<disableLoot>;<?sound>;?<id>;?<nbt>",
             "Where: <modid:master> and <modid:summon> are the entities for the master and the mob to summon respectively.",
             "<healthPercentage> is a value between 0 and 100 (inclusive) which determines the health that the master entity has to be at to spawn the summon",
-            "<spawnRange> is the min-max range of summons that can spawn in one cycle. Additionally higher value determines the maximum amount of this summon entity that can exist by the master entity.",
-            "<cooldownRange> is the min-max range of seconds to wait between each cycle.",
+            "<spawnRange> is a '-' separated min-max range of summons that can spawn in one cycle. Additionally higher value determines the maximum amount of this summon entity that can exist by the master entity.",
+            "<cooldownRange> is a '-' separated range of seconds to wait between each cycle.",
             "<bypass> is a true/false value. If set to true it will ignore the <maxSpawn> restriction and allow more summons to spawn.",
-            "<despawnOnDeath> will cause all summons of this type to die when the master entity dies.",
+            "<despawnOnDeath> is a true/false value and will cause all summons of this type to die when the master entity dies.",
             "<maxCap> is the maximum amount of this summon type that can ever be spawned by this entity. Set this to 0 or less to disable",
             "<disableXP> and <disableLoot> are true/false values and will make it so that the summoned entities do not drop XP or Loot respectively",
-            "<sound> is the sound that will be played when the summon happens",
+            "<?sound> is the (optional) sound that will be played when the summon happens",
             "?<nbt> optional NBT to apply to the summon on spawn.",
-            "?<id> optional number if you want to have a master:summon combo more than once. This has to be unique."
+            "?<id> optional number if you want to have a master:summon combo more than once. This has to be unique.",
+            "Example:",
+            "S:\"Summon Spawns\" <",
+            "   minecraft:zombie;minecraft:skeleton;100;1;3-5;false;true;0;true;true;minecraft:ambient.cave;{NoAI:1b}",
+            "   minecraft:zombie;minecraft:skeleton;50;3-4;5-20;false;true;30;true;false;minecraft:entity.enderdragon.growl;1",
+            "   minecraft:zombie;minecraft:bat;60;1;6-10;true;false;30;false;false;minecraft:ambient.cave",
+            "   minecraft:player;minecraft:rabbit;80;3-7;5-20;false;true;0;false;true;minecraft:ambient.cave",
+            ">",
     })
     public String[] rawSummonSpawns = new String[]{};
 
@@ -77,12 +83,17 @@ public class EntityConfig implements ISubConfig {
     @Config.Name("Death Spawns")
     @Config.Comment({
             "Death Spawns allows mobs to be summoned when an entity dies.",
-            "Format: <modid:entity>;<modid:spawn>;<spawnRange>;<disableXP>;<disableLoot>;<sound>;?<nbt>",
+            "Format: <modid:entity>;<modid:spawn>;<spawnRange>;<disableXP>;<disableLoot>;<?sound>;?<nbt>",
             "Where: <modid:master> and <modid:spawn> are the entities for the entity that dies and the mob that spawns respectively.",
             "<spawnRange> is the min-max range of summons that can spawn in one cycle. Additionally higher value determines the maximum amount of this summon entity that can exist by the master entity.",
             "<disableXP> and <disableLoot> are true/false values and will make it so that the summoned entities do not drop XP or Loot respectively",
-            "<sound> is the sound that will be played when the summon happens",
+            "<?sound> is the (optional) sound that will be played when the summon happens",
             "?<nbt> optional NBT to apply to the summon on spawn.",
+            "Example:",
+            "S:\"Death Spawns\" <",
+            "   minecraft:zombie;minecraft:spider;2-5;true;false;minecraft:ambient.cave",
+            "   minecraft:zombie;minecraft:villager;1;false;false;minecraft:entity.enderdragon.growl;{NoAI:1b}",
+            ">",
     })
     public String[] rawDeathSpawns = new String[]{};
 
@@ -92,15 +103,16 @@ public class EntityConfig implements ISubConfig {
     @Config.Name("Mob Offense")
     @Config.Comment({
             "Mob Offense allows to apply potions effects when a mob damages another entity.",
-            "Format: <modid:entity>;<potionEffect>;<health>;<potionLevel>;<potionDuration>;<chance>;?<dimension>;?<damageType>",
+            "Format: <modid:entity>;<potionEffect>;<health>;<potionLevel>;<potionDuration>;<chance>;<?sound>;?<dimension>;?<damageType>",
             "Where: <modid:entity> is the entity that does the melee.",
             "<potionEffect> is the name of the potion effect to use.",
             "<health> is the percentage (0-100 exclusive-inclusive) that the entity has to be at to apply the effect.",
             "<potionLevel> is the tier of the potion starting at 0. For example, Poison I has level 0, Speed II has level 1.",
             "<potionDuration> is the duration in seconds of the potion.",
             "<chance> is the percentage (0-100 exclusive-inclusive) chance that the effect will take place on attack.",
+            "<?sound> is the (optional) sound that will be played when the attack happens",
             "?<dimension> is an optional list of dimension ids in which the effect can/cannot be applied in. This takes form of '[1, -1, 2, 3, ...]'. You can prefix this list with '!' to turn it into a list of dimensions to block instead. For example '![0]' would block only the Overworld.",
-            "?<damageType> is the kind of damage that this is triggered by. Leaving this empty results in every damage counting, 'mob' results in melee only, 'arrow' results in an arrow shot etc."
+            "?<damageType> is the kind of damage that this is triggered by. Leaving this empty results in every damage counting, 'mob/player' results in mob/player melee only, 'arrow' results in an arrow shot etc."
     })
     public String[] rawMobOffense = new String[]{};
 
@@ -110,15 +122,16 @@ public class EntityConfig implements ISubConfig {
     @Config.Name("Mob Defense")
     @Config.Comment({
             "Mob Defense allows to apply potions effects to the attacker when a mob takes damage.",
-            "Format: <modid:entity><potionEffect>;<health>;<potionLevel>;<potionDuration>;<chance>;?<dimension>;?<damageType>",
+            "Format: <modid:entity><potionEffect>;<health>;<potionLevel>;<potionDuration>;<chance>;<?sound>;?<dimension>;?<damageType>",
             "Where: <modid:entity> is the entity that takes damage.",
             "<potionEffect> is the name of the potion effect to use.",
             "<health> is the percentage (0-100 exclusive-inclusive) that the entity has to be at to apply the effect.",
             "<potionLevel> is the tier of the potion starting at 0. For example, Poison I has level 0, Speed II has level 1.",
             "<potionDuration> is the duration in seconds of the potion.",
             "<chance> is the percentage (0-100 exclusive-inclusive) chance that the effect will take place on attack.",
+            "<?sound> is the (optional) sound that will be played when the defense happens",
             "?<dimension> is an optional list of dimension ids in which the effect can/cannot be applied in. This takes form of '[1, -1, 2, 3, ...]'. You can prefix this list with '!' to turn it into a list of dimensions to block instead. For example '![0]' would block only the Overworld.",
-            "?<damageType> is the kind of damage that this is triggered by. Leaving this empty results in every damage counting, 'mob' results in melee only, 'arrow' results in an arrow shot etc."
+            "?<damageType> is the kind of damage that this is triggered by. Leaving this empty results in every damage counting, 'mob/player' results in mob/player melee only, 'arrow' results in an arrow shot etc."
     })
     public String[] rawMobDefenses = new String[]{};
 
@@ -203,7 +216,7 @@ public class EntityConfig implements ISubConfig {
                         .next().parseAs(Integer::parseInt).accept(builder::cap)
                         .next().parseAs(Boolean::parseBoolean).accept(builder::disableXP)
                         .next().parseAs(Boolean::parseBoolean).accept(builder::disableLoot)
-                        .next().parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
+                        .next().optional(null).parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
                         .next().optional(0).parseAs(Integer::parseInt)
                         .<Integer>validate((id) -> {
                             if (this.summonSpawns.containsKey(masterSetter.get())) {
@@ -241,7 +254,7 @@ public class EntityConfig implements ISubConfig {
                         .next().parseAs(Integer::parseInt).<Integer>validateRange((min, max) -> min <= max).acceptRange(builder::minSpawn, builder::maxSpawn)
                         .next().parseAs(Boolean::parseBoolean).accept(builder::disableXP)
                         .next().parseAs(Boolean::parseBoolean).accept(builder::disableLoot)
-                        .next().parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
+                        .next().optional(null).parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
                         .next().optional(new NBTTagCompound())
                         .parseAs(str -> {
                             try {
@@ -272,6 +285,7 @@ public class EntityConfig implements ISubConfig {
                         .next().parseAs(Integer::parseInt).<Integer>validate(level -> level >= 0).accept(builder::level)
                         .next().parseAs(Integer::parseInt).<Integer>validate(duration -> duration >= 0).accept(builder::duration)
                         .next().parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance)
+                        .next().optional(null).parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
                         .next().optional("![]").parseAs(Integer::parseInt).validateList(DimensionManager::isDimensionRegistered).blockList(builder::blockDimensions).acceptList(builder::dimension)
                         .next().optional("").accept(builder::damageType);
             } catch (StringConfigException exception) {
@@ -293,7 +307,7 @@ public class EntityConfig implements ISubConfig {
                         .next().parseAs(Float::parseFloat).<Float>validate(health -> health > 0 && health <= 100).accept(builder::health)
                         .next().parseAs(Integer::parseInt).<Integer>validate(level -> level >= 0).accept(builder::level)
                         .next().parseAs(Integer::parseInt).<Integer>validate(duration -> duration >= 0).accept(builder::duration)
-                        .next().parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance)
+                        .next().parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance).next().optional(null).parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
                         .next().optional("![]").parseAs(Integer::parseInt).validateList(DimensionManager::isDimensionRegistered).blockList(builder::blockDimensions).acceptList(builder::dimension)
                         .next().optional("").accept(builder::damageType);
             } catch (StringConfigException exception) {
