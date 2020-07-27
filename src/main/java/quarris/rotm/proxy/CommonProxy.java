@@ -9,14 +9,6 @@ import quarris.rotm.items.ModItems;
 public class CommonProxy {
 
     public void registerItemModels() {
-        if (ModConfigs.debugConfigs.enableDebugMode) {
-            this.registerItemModel(ModItems.debugDamages, "inventory");
-            this.registerItemModel(ModItems.debugEntities, "inventory");
-            this.registerItemModel(ModItems.debugPotions, "inventory");
-        }
-    }
 
-    private void registerItemModel(Item item, String variant) {
-        ModelLoader.setCustomModelResourceLocation(item, 0, new ModelResourceLocation(item.getRegistryName(), variant));
     }
 }

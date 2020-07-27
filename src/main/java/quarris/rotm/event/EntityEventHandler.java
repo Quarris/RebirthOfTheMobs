@@ -17,8 +17,10 @@ import net.minecraftforge.fml.common.eventhandler.Event;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
+import org.apache.commons.lang3.tuple.Pair;
 import quarris.rotm.ROTM;
 import quarris.rotm.capability.SpawnSummonsCap;
+import quarris.rotm.config.EntityConfig;
 import quarris.rotm.config.ModConfigs;
 import quarris.rotm.config.types.HealthRegainType;
 import quarris.rotm.config.types.MobDefenseType;
@@ -53,8 +55,14 @@ public class EntityEventHandler {
         if (!entity.world.isRemote) {
             DamageSource source = event.getSource();
 
-            Collection<String> sourcesToCancel = ModConfigs.entityConfigs.damagesToCancel
-                    .get(Utils.getEntityName(entity));
+            EntityConfig config = ModConfigs.entityConfigs;
+
+            ResourceLocation entityName = Utils.getEntityName(entity);
+
+            Collection<String> sourcesToCancel = config.damagesToCancel.get(Pair.of(entityName, null));
+            if (source.getTrueSource() != null) {
+                sourcesToCancel.addAll(config.damagesToCancel.get(Pair.of(entityName, Utils.getEntityName(source.getTrueSource()))));
+            }
 
             if (sourcesToCancel.contains(source.getDamageType())) {
                 event.setCanceled(true);
@@ -64,8 +72,9 @@ public class EntityEventHandler {
 
     @SubscribeEvent
     public static void summonSpawns(LivingEvent.LivingUpdateEvent event) {
-        if (event.getEntityLiving().world.isRemote || event.getEntityLiving().isDead || !event.getEntityLiving().hasCapability(SpawnSummonsCap.instance, null))
+        if (event.getEntityLiving().world.isRemote || event.getEntityLiving().isDead || !event.getEntityLiving().hasCapability(SpawnSummonsCap.instance, null)) {
             return;
+        }
 
         SpawnSummonsCap cap = event.getEntityLiving().getCapability(SpawnSummonsCap.instance, null);
         cap.update();
@@ -73,8 +82,9 @@ public class EntityEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void summonSpawnsDespawnOnDeath(LivingDeathEvent event) {
-        if (event.getEntityLiving().world.isRemote || !event.getEntityLiving().hasCapability(SpawnSummonsCap.instance, null))
+        if (event.getEntityLiving().world.isRemote || !event.getEntityLiving().hasCapability(SpawnSummonsCap.instance, null)) {
             return;
+        }
 
         SpawnSummonsCap cap = event.getEntityLiving().getCapability(SpawnSummonsCap.instance, null);
         cap.despawnSummons();
@@ -96,8 +106,9 @@ public class EntityEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void deathSpawn(LivingDeathEvent event) {
-        if (event.getEntityLiving().world.isRemote)
+        if (event.getEntityLiving().world.isRemote) {
             return;
+        }
 
         EntityLivingBase entity = event.getEntityLiving();
         ModConfigs.entityConfigs.deathSpawns.get(Utils.getEntityName(entity)).stream()
@@ -154,14 +165,13 @@ public class EntityEventHandler {
             DamageSource source = event.getSource();
             if (source.getTrueSource() instanceof EntityLivingBase) {
                 EntityLivingBase attacker = (EntityLivingBase) event.getSource().getTrueSource();
-                Collection<MobOffenseType> offenseTypes = ModConfigs.entityConfigs.mobOffense.get(Utils.getEntityName(entity));
-                System.out.println(offenseTypes);
+                Collection<MobOffenseType> offenseTypes = ModConfigs.entityConfigs.mobOffense.get(Utils.getEntityName(attacker));
                 for (MobOffenseType type : offenseTypes) {
-                    if (type.canApplyToEntity(entity) && (type.damageType.isEmpty() || type.damageType.equalsIgnoreCase(source.getDamageType()))) {
+                    if (type.canApplyToEntity(attacker) && (type.damageType.isEmpty() || type.damageType.equalsIgnoreCase(source.getDamageType()))) {
                         PotionEffect effect = new PotionEffect(ForgeRegistries.POTIONS.getValue(type.potion), type.duration, type.level);
-                        attacker.addPotionEffect(effect);
+                        entity.addPotionEffect(effect);
                         if (type.sound != null) {
-                            entity.world.playSound(null, entity.getPosition(), ForgeRegistries.SOUND_EVENTS.getValue(type.sound), SoundCategory.HOSTILE, 1, 1);
+                            entity.world.playSound(null, attacker.getPosition(), ForgeRegistries.SOUND_EVENTS.getValue(type.sound), SoundCategory.HOSTILE, 1, 1);
                         }
                     }
                 }
@@ -193,8 +203,9 @@ public class EntityEventHandler {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void applyHealthRegain(LivingDeathEvent event) {
         World world = event.getEntityLiving().world;
-        if (world.isRemote)
+        if (world.isRemote) {
             return;
+        }
 
         EntityLivingBase dead = event.getEntityLiving();
         List<EntityLivingBase> loaded = world.loadedEntityList.stream()
@@ -203,14 +214,14 @@ public class EntityEventHandler {
                 .collect(Collectors.toList());
 
         for (EntityLivingBase entity : loaded) {
-           List<HealthRegainType> types = ModConfigs.entityConfigs.healthRegains.get(EntityList.getKey(entity)).stream().filter(type -> type.target == null || type.target.equals(Utils.getEntityName(dead))).collect(Collectors.toList());
-           for (HealthRegainType type : types) {
-               if (type.radius <= 0 || dead.getDistanceSq(entity) <= type.radius * type.radius) {
-                   if (!type.lastManStanding || loaded.stream().filter(e -> e != null && Utils.getEntityName(e).equals(type.target)).count() == 1) {
-                       entity.heal(entity.getMaxHealth() * type.healthPercentage);
-                   }
-               }
-           }
+            List<HealthRegainType> types = ModConfigs.entityConfigs.healthRegains.get(EntityList.getKey(entity)).stream().filter(type -> type.target == null || type.target.equals(Utils.getEntityName(dead))).collect(Collectors.toList());
+            for (HealthRegainType type : types) {
+                if (type.radius <= 0 || dead.getDistanceSq(entity) <= type.radius * type.radius) {
+                    if (!type.lastManStanding || loaded.stream().filter(e -> e != null && Utils.getEntityName(e).equals(type.target)).count() == 1) {
+                        entity.heal(entity.getMaxHealth() * type.healthPercentage);
+                    }
+                }
+            }
         }
     }
 

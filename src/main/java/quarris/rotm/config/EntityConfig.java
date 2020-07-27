@@ -9,6 +9,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
+import org.apache.commons.lang3.tuple.Pair;
 import quarris.rotm.ROTM;
 import quarris.rotm.config.types.*;
 import quarris.rotm.config.utils.StringConfig;
@@ -38,18 +39,21 @@ public class EntityConfig implements ISubConfig {
     @Config.Name("Cancel Damage Sources")
     @Config.Comment({
             "Cancels a damage source affecting a specified entity.",
-            "Format: \"<modid:entity>;<sourceName1>;<sourceName2>;...<sourceNameN>\"",
-            "Where: <modid:entity> is the entity from the 'modid' mod for which to cancel the <sourceName#> potion effect.",
+            "Format: \"<modid:entity>;<damageSource>;?<modid:source>\"",
+            "Where: <modid:entity> is the entity.",
+            "<damageSource> is the name of the damage dealt.",
+            "?<modid:source> is the optional entity that needs to deal the specified damage",
             "Example: ",
             "S:\"Cancel Damage Sources\" <",
             "   minecraft:player;indirectMagic",
-            "   minecraft:zombie;onFire;indirectMagic",
+            "   minecraft:zombie;onFire",
+            "   minecraft:zombie;indirectMagic",
+            "   minecraft:player;arrow;minecraft:stray",
             ">"
-
     })
     public String[] rawCancelDamage = new String[]{};
     @Config.Ignore
-    public final Multimap<ResourceLocation, String> damagesToCancel = HashMultimap.create();
+    public final Multimap<Pair<ResourceLocation, ResourceLocation>, String> damagesToCancel = HashMultimap.create();
 
     @Config.Name("Summon Spawns")
     @Config.Comment({
@@ -79,13 +83,12 @@ public class EntityConfig implements ISubConfig {
     @Config.Ignore
     public final Multimap<ResourceLocation, SummonSpawnType> summonSpawns = HashMultimap.create();
 
-    // TODO: add optional config for spawn radius
     @Config.Name("Death Spawns")
     @Config.Comment({
             "Death Spawns allows mobs to be summoned when an entity dies.",
             "Format: <modid:entity>;<modid:spawn>;<spawnRange>;<disableXP>;<disableLoot>;<?sound>;?<nbt>",
             "Where: <modid:master> and <modid:spawn> are the entities for the entity that dies and the mob that spawns respectively.",
-            "<spawnRange> is the min-max range of summons that can spawn in one cycle. Additionally higher value determines the maximum amount of this summon entity that can exist by the master entity.",
+            "<spawnRange> is the min-max range of summons that can spawn in one cycle.",
             "<disableXP> and <disableLoot> are true/false values and will make it so that the summoned entities do not drop XP or Loot respectively",
             "<?sound> is the (optional) sound that will be played when the summon happens",
             "?<nbt> optional NBT to apply to the summon on spawn.",
@@ -112,7 +115,7 @@ public class EntityConfig implements ISubConfig {
             "<chance> is the percentage (0-100 exclusive-inclusive) chance that the effect will take place on attack.",
             "<?sound> is the (optional) sound that will be played when the attack happens",
             "?<dimension> is an optional list of dimension ids in which the effect can/cannot be applied in. This takes form of '[1, -1, 2, 3, ...]'. You can prefix this list with '!' to turn it into a list of dimensions to block instead. For example '![0]' would block only the Overworld.",
-            "?<damageType> is the kind of damage that this is triggered by. Leaving this empty results in every damage counting, 'mob/player' results in mob/player melee only, 'arrow' results in an arrow shot etc."
+            "?<damageType> is the kind of damage that this is triggered by. Leaving this empty results in every damage counting, 'mob' and 'player' results in mob and player melee only respectively, 'arrow' results in an arrow shot etc."
     })
     public String[] rawMobOffense = new String[]{};
 
@@ -131,7 +134,7 @@ public class EntityConfig implements ISubConfig {
             "<chance> is the percentage (0-100 exclusive-inclusive) chance that the effect will take place on attack.",
             "<?sound> is the (optional) sound that will be played when the defense happens",
             "?<dimension> is an optional list of dimension ids in which the effect can/cannot be applied in. This takes form of '[1, -1, 2, 3, ...]'. You can prefix this list with '!' to turn it into a list of dimensions to block instead. For example '![0]' would block only the Overworld.",
-            "?<damageType> is the kind of damage that this is triggered by. Leaving this empty results in every damage counting, 'mob/player' results in mob/player melee only, 'arrow' results in an arrow shot etc."
+            "?<damageType> is the kind of damage that this is triggered by. Leaving this empty results in every damage counting, 'mob' and 'player' results in mob and player melee only respectively, 'arrow' results in an arrow shot etc."
     })
     public String[] rawMobDefenses = new String[]{};
 
@@ -184,17 +187,19 @@ public class EntityConfig implements ISubConfig {
     private void updateDamageSourceConfigs() {
         this.damagesToCancel.clear();
         for (String s : this.rawCancelDamage) {
-            List<String> damages = new ArrayList<>();
+            Settable<String> damageType = Settable.create();
             Settable<ResourceLocation> entity = Settable.create();
+            Settable<ResourceLocation> target = Settable.create();
             try {
                 new StringConfig(s)
                         .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(entity::set)
-                        .rest().<String>accept(damages::add);
+                        .next().accept(damageType::set)
+                        .next().optional(null).parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(target::set);
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
 
-            this.damagesToCancel.putAll(entity.get(), damages);
+            this.damagesToCancel.put(Pair.of(entity.get(), target.get()), damageType.get());
         }
     }
 

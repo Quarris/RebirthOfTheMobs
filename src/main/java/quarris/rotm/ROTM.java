@@ -34,28 +34,30 @@ import java.util.function.BiPredicate;
 public class ROTM {
     public static final String MODID = "rotm";
     public static final String NAME = "Rebirth of the Mobs";
-    public static final String VERSION = "0.3";
+    public static final String VERSION = "0.5";
 
     public static Logger logger;
 
     @SidedProxy(clientSide = "quarris.rotm.proxy.ClientProxy", serverSide = "quarris.rotm.proxy.CommonProxy")
     public static CommonProxy proxy;
 
-    public ROTM() {
-        ObfuscationReflectionHelper.setPrivateValue(EntityLiving.SpawnPlacementType.class, EntityLiving.SpawnPlacementType.ON_GROUND,
-                (BiPredicate<IBlockAccess, BlockPos>) Utils::canEntitySpawn, "spawnPredicate");
-    }
+    public ROTM() { }
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         logger = event.getModLog();
-        ModConfigs.updateConfigs();
     }
 
     @EventHandler
     public void init(FMLInitializationEvent event) {
+        ModConfigs.updateConfigs();
         SpawnSummonsCap.register();
         proxy.registerItemModels();
+
+        if (ModConfigs.miscConfigs.naturalSpawnBuff) {
+            ObfuscationReflectionHelper.setPrivateValue(EntityLiving.SpawnPlacementType.class, EntityLiving.SpawnPlacementType.ON_GROUND,
+                    (BiPredicate<IBlockAccess, BlockPos>) Utils::canEntitySpawn, "spawnPredicate");
+        }
     }
 
     @EventHandler

@@ -32,6 +32,7 @@ public class ModConfigs {
     })
     public static MiscConfig miscConfigs = new MiscConfig();
 
+    @Config.RequiresMcRestart
     @Config.Name("Debug Configurations")
     @Config.Comment({
             "This mod uses a variety of different aspects of the game which require internal names.",

@@ -40,6 +40,10 @@ public class MiscConfig implements ISubConfig {
     @Config.Ignore
     public final Map<ResourceLocation, Float> swimSpeedMultipliers = new HashMap<>();
 
+    @Config.RequiresMcRestart
+    @Config.Comment("This config allows natural spawns on most solid blocks such as slabs or stairs.")
+    public boolean naturalSpawnBuff = true;
+
     @Override
     public void onConfigChanged() {
         this.updateGlobalSwimSpeedList();

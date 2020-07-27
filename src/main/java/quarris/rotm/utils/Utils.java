@@ -18,7 +18,7 @@ public class Utils {
     public static final ResourceLocation PLAYER_RES = new ResourceLocation("player");
 
     public static boolean doesEntityExist(ResourceLocation entityName) {
-        return entityName.equals(PLAYER_RES) || EntityList.isRegistered(entityName);
+        return entityName == null || entityName.equals(PLAYER_RES) || EntityList.isRegistered(entityName);
     }
 
     public static ResourceLocation getEntityName(Entity entity) {
