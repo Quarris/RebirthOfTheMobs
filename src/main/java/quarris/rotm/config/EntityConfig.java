@@ -197,6 +197,7 @@ public class EntityConfig implements ISubConfig {
                         .next().optional(null).parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(target::set);
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
+                continue;
             }
 
             this.damagesToCancel.put(Pair.of(entity.get(), target.get()), damageType.get());
