@@ -27,6 +27,7 @@ import quarris.rotm.config.types.MobDefenseType;
 import quarris.rotm.config.types.MobOffenseType;
 import quarris.rotm.utils.Utils;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -52,21 +53,23 @@ public class EntityEventHandler {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void cancelDamageSource(LivingAttackEvent event) {
         EntityLivingBase entity = event.getEntityLiving();
-        if (!entity.world.isRemote) {
-            DamageSource source = event.getSource();
+        DamageSource source = event.getSource();
 
-            EntityConfig config = ModConfigs.entityConfigs;
+        EntityConfig config = ModConfigs.entityConfigs;
 
-            ResourceLocation entityName = Utils.getEntityName(entity);
+        ResourceLocation entityName = Utils.getEntityName(entity);
 
-            Collection<String> sourcesToCancel = config.damagesToCancel.get(Pair.of(entityName, null));
-            if (source.getTrueSource() != null) {
-                sourcesToCancel.addAll(config.damagesToCancel.get(Pair.of(entityName, Utils.getEntityName(source.getTrueSource()))));
-            }
+        List<String> sourcesToCancel = new ArrayList<>(config.damagesToCancel.get(Pair.of(entityName, null)));
+        if (source.getTrueSource() != null) {
+            sourcesToCancel.addAll(config.damagesToCancel.get(Pair.of(entityName, Utils.getEntityName(source.getTrueSource()))));
+        }
 
-            if (sourcesToCancel.contains(source.getDamageType())) {
-                event.setCanceled(true);
-            }
+        if (source.getImmediateSource() != null) {
+            sourcesToCancel.addAll(config.damagesToCancel.get(Pair.of(entityName, Utils.getEntityName(source.getImmediateSource()))));
+        }
+
+        if (sourcesToCancel.contains(source.getDamageType())) {
+            event.setCanceled(true);
         }
     }
 
@@ -160,7 +163,7 @@ public class EntityEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void applyMobOffenseEffect(LivingHurtEvent event) {
-        if (!event.getEntityLiving().world.isRemote) {
+        if (!event.getEntityLiving().world.isRemote && event.getAmount() > 0) {
             EntityLivingBase entity = event.getEntityLiving();
             DamageSource source = event.getSource();
             if (source.getTrueSource() instanceof EntityLivingBase) {
