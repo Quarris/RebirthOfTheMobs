@@ -7,9 +7,11 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import quarris.rotm.ROTM;
 import quarris.rotm.config.ModConfigs;
+import quarris.rotm.config.VehicleConfig;
 import quarris.rotm.utils.Utils;
 
 import java.util.Collection;
+import java.util.Set;
 
 @Mod.EventBusSubscriber(modid = ROTM.MODID)
 public class VehicleEventHandler {
@@ -17,10 +19,18 @@ public class VehicleEventHandler {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void cancelMount(EntityMountEvent event) {
         if (!event.getEntity().world.isRemote && event.isMounting()) {
-            Collection<ResourceLocation> entitiesToCancel = ModConfigs.vehicleConfigs.vehicleCancels.get(Utils.getEntityName(event.getEntityBeingMounted()));
-            if (ModConfigs.vehicleConfigs.treatAtBlocklist == entitiesToCancel.contains(Utils.getEntityName(event.getEntityMounting()))) {
+            ResourceLocation vehicleName = Utils.getEntityName(event.getEntityBeingMounted());
+            ResourceLocation entityName = Utils.getEntityName(event.getEntityMounting());
+            VehicleConfig config = ModConfigs.vehicleConfigs;
+
+            Set<ResourceLocation> overrides = config.vehicleCancelOverrides.get(vehicleName);
+            boolean cancelVehicle = config.vehicleEntityCancels.contains(vehicleName);
+            boolean cancelMod = config.vehicleModCancels.contains(vehicleName.getResourceDomain());
+            boolean isOverriden = overrides.contains(null) || overrides.contains(entityName);
+
+            if (((cancelVehicle || cancelMod) && !isOverriden) == config.treatAtBlocklist)
                 event.setCanceled(true);
-            }
+
         }
     }
 
