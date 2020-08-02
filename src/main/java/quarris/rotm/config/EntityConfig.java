@@ -2,6 +2,7 @@ package quarris.rotm.config;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.SetMultimap;
 import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.nbt.NBTException;
 import net.minecraft.nbt.NBTTagCompound;
@@ -34,7 +35,7 @@ public class EntityConfig implements ISubConfig {
     })
     public String[] rawCancelPotions = new String[]{};
     @Config.Ignore
-    public final Multimap<ResourceLocation, ResourceLocation> potionsToCancel = HashMultimap.create();
+    public final SetMultimap<ResourceLocation, ResourceLocation> potionsToCancel = HashMultimap.create();
 
     @Config.Name("Cancel Damage Sources")
     @Config.Comment({
@@ -53,7 +54,7 @@ public class EntityConfig implements ISubConfig {
     })
     public String[] rawCancelDamage = new String[]{};
     @Config.Ignore
-    public final Multimap<Pair<ResourceLocation, ResourceLocation>, String> damagesToCancel = HashMultimap.create();
+    public final SetMultimap<Pair<ResourceLocation, ResourceLocation>, String> damagesToCancel = HashMultimap.create();
 
     @Config.Name("Summon Spawns")
     @Config.Comment({

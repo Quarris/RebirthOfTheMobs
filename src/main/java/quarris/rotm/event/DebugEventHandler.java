@@ -22,7 +22,7 @@ public class DebugEventHandler {
             DamageSource source = event.getSource();
             String damageType = source.getDamageType();
             String immediateSource = source.getImmediateSource() == null ? "null" : Utils.getEntityName(source.getImmediateSource()).toString();
-            String trueSource = source.getTrueSource() == null ? "null" : Utils.getEntityName(source.getImmediateSource()).toString();
+            String trueSource = source.getTrueSource() == null ? "null" : Utils.getEntityName(source.getTrueSource()).toString();
             ITextComponent text = new TextComponentTranslation("debug_damages.print", damageType, immediateSource, trueSource);
             event.getEntity().getEntityData().setString("LastDamageSource", text.getFormattedText());
             if (event.getEntityLiving() instanceof EntityPlayerMP && event.getEntityLiving().getHeldItemMainhand().getItem() == ModItems.debugDamages) {

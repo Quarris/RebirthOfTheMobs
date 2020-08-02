@@ -27,10 +27,7 @@ import quarris.rotm.config.types.MobDefenseType;
 import quarris.rotm.config.types.MobOffenseType;
 import quarris.rotm.utils.Utils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Mod.EventBusSubscriber(modid = ROTM.MODID)
@@ -41,7 +38,7 @@ public class EntityEventHandler {
     public static void cancelPotionApply(PotionEvent.PotionApplicableEvent event) {
         EntityLivingBase entity = event.getEntityLiving();
         if (!entity.world.isRemote) {
-            Collection<ResourceLocation> potionsToCancel = ModConfigs.entityConfigs.potionsToCancel
+            Set<ResourceLocation> potionsToCancel = ModConfigs.entityConfigs.potionsToCancel
                     .get(Utils.getEntityName(entity));
 
             if (potionsToCancel.contains(event.getPotionEffect().getPotion().getRegistryName())) {
