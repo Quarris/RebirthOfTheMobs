@@ -50,19 +50,17 @@ public class ROTM {
 
     @EventHandler
     public void init(FMLInitializationEvent event) {
-        ModConfigs.updateConfigs();
         SpawnSummonsCap.register();
         proxy.registerItemModels();
-
-        if (ModConfigs.miscConfigs.naturalSpawnBuff) {
-            ObfuscationReflectionHelper.setPrivateValue(EntityLiving.SpawnPlacementType.class, EntityLiving.SpawnPlacementType.ON_GROUND,
-                    (BiPredicate<IBlockAccess, BlockPos>) Utils::canEntitySpawn, "spawnPredicate");
-        }
     }
 
     @EventHandler
     public void postInit(FMLPostInitializationEvent event) {
-
+        ModConfigs.updateConfigs();
+        if (ModConfigs.miscConfigs.naturalSpawnBuff) {
+            ObfuscationReflectionHelper.setPrivateValue(EntityLiving.SpawnPlacementType.class, EntityLiving.SpawnPlacementType.ON_GROUND,
+                    (BiPredicate<IBlockAccess, BlockPos>) Utils::canEntitySpawn, "spawnPredicate");
+        }
     }
 
     @EventHandler
