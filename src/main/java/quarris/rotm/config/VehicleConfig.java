@@ -34,7 +34,7 @@ public class VehicleConfig implements ISubConfig {
 
     @Config.Name("Cancel Vehicle Mounting Overrides")
     @Config.Comment({
-            "This allows entities to be excluded from the Cancel Vehicle Mounting config.",
+            "This allows vehicles to be excluded from the Cancel Vehicle Mounting config.",
             "You can put the vehicle entity (to override a mod vehicle cancel) or a vehicle;entity pair (to override a specific vehicle cancel).",
             "Format: <modid:vehicle> OR <modid:vehicle>;<modid:entity>",
             "Where: <modid:vehicle> is the vehicle to override.",
@@ -45,6 +45,16 @@ public class VehicleConfig implements ISubConfig {
     @Config.Ignore
     public SetMultimap<ResourceLocation, ResourceLocation> vehicleCancelOverrides = HashMultimap.create();
 
+    @Config.Name("Global Cancel Vehicle Mounting Overrides")
+    @Config.Comment({
+            "This allows the passanger entities to be excluded globally from the Cancel Vehicle Mounting config.",
+            "Format: <modid:entity>",
+            "Where: <modid:entity> is the entity to globally exclude from the Cancel Vehicle Mounting."
+    })
+    public String[] rawGlobalCancelOverrides = new String[]{};
+
+    @Config.Ignore
+    public Set<ResourceLocation> globalCancelOverrides = new HashSet<>();
 
     @Config.Comment("Should the Cancel Vehicle Mounting list be treated as a blocklist instead")
     public boolean treatAtBlocklist = true;
@@ -55,12 +65,13 @@ public class VehicleConfig implements ISubConfig {
         this.vehicleEntityCancels.clear();
         this.vehicleModCancels.clear();
         this.vehicleCancelOverrides.clear();
+        this.globalCancelOverrides.clear();
         for (String s : this.rawVehicleCancels) {
             ResourceLocation res = new ResourceLocation(s);
             if (Utils.doesEntityExist(res)) {
-                vehicleEntityCancels.add(res);
+                this.vehicleEntityCancels.add(res);
             } else if (Loader.isModLoaded(s)) {
-                vehicleModCancels.add(s);
+                this.vehicleModCancels.add(s);
             } else {
                 ROTM.logger.warn("Could not parse config; skipping {}", s);
             }
@@ -79,6 +90,15 @@ public class VehicleConfig implements ISubConfig {
             }
 
             this.vehicleCancelOverrides.put(vehicle.get(), entity.get());
+        }
+
+        for (String s : rawGlobalCancelOverrides) {
+            ResourceLocation res = new ResourceLocation(s);
+            if (Utils.doesEntityExist(res)) {
+                this.globalCancelOverrides.add(res);
+            } else {
+                ROTM.logger.warn("Could not parse config; skipping {}", s);
+            }
         }
     }
 }

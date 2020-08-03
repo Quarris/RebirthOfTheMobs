@@ -26,7 +26,7 @@ public class VehicleEventHandler {
             Set<ResourceLocation> overrides = config.vehicleCancelOverrides.get(vehicleName);
             boolean cancelVehicle = config.vehicleEntityCancels.contains(vehicleName);
             boolean cancelMod = config.vehicleModCancels.contains(vehicleName.getResourceDomain());
-            boolean isOverriden = overrides.contains(null) || overrides.contains(entityName);
+            boolean isOverriden = config.globalCancelOverrides.contains(entityName) || overrides.contains(null) || overrides.contains(entityName);
 
             if (((cancelVehicle || cancelMod) && !isOverriden) == config.treatAtBlocklist)
                 event.setCanceled(true);
