@@ -34,7 +34,7 @@ import java.util.function.BiPredicate;
 public class ROTM {
     public static final String MODID = "rotm";
     public static final String NAME = "Rebirth of the Mobs";
-    public static final String VERSION = "0.7.1";
+    public static final String VERSION = "0.7.2";
 
     public static Logger logger;
 
@@ -50,19 +50,17 @@ public class ROTM {
 
     @EventHandler
     public void init(FMLInitializationEvent event) {
-        ModConfigs.updateConfigs();
         SpawnSummonsCap.register();
         proxy.registerItemModels();
-
-        if (ModConfigs.miscConfigs.naturalSpawnBuff) {
-            ObfuscationReflectionHelper.setPrivateValue(EntityLiving.SpawnPlacementType.class, EntityLiving.SpawnPlacementType.ON_GROUND,
-                    (BiPredicate<IBlockAccess, BlockPos>) Utils::canEntitySpawn, "spawnPredicate");
-        }
     }
 
     @EventHandler
     public void postInit(FMLPostInitializationEvent event) {
-
+        ModConfigs.updateConfigs();
+        if (ModConfigs.miscConfigs.naturalSpawnBuff) {
+            ObfuscationReflectionHelper.setPrivateValue(EntityLiving.SpawnPlacementType.class, EntityLiving.SpawnPlacementType.ON_GROUND,
+                    (BiPredicate<IBlockAccess, BlockPos>) Utils::canEntitySpawn, "spawnPredicate");
+        }
     }
 
     @EventHandler

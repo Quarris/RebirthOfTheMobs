@@ -267,7 +267,7 @@ public class EntityConfig implements ISubConfig {
                             try {
                                 return JsonToNBT.getTagFromJson(str);
                             } catch (NBTException e) {
-                                e.printStackTrace();
+                                ROTM.logger.warn("Could not parse NBT for {}; {}", s, e.getMessage());
                             }
                             return new NBTTagCompound();
                         }).accept(builder::nbt);
