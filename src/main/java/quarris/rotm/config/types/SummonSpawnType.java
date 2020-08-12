@@ -17,11 +17,12 @@ public class SummonSpawnType {
     public final int cap;                   // Hard cap on the total amount of this summon that can spawn by the master entity
     public final boolean disableXP;         // Should XP be dropped by the summons on death
     public final boolean disableLoot;       // Should Loot be dropped by the summons on death
+    public final boolean autoAggro;
     public final ResourceLocation sound;    // The sound to be played when the summon happens
     public final NBTTagCompound nbt;        // NBT to apply to the summoned entity on spawn
 
 
-    SummonSpawnType(ResourceLocation summon, int id, float health, int minSpawn, int maxSpawn, int minCooldown, int maxCooldown, boolean bypassMaxSpawns, boolean despawnOnDeath, int cap, boolean disableXP, boolean disableLoot, ResourceLocation sound, NBTTagCompound nbt) {
+    SummonSpawnType(ResourceLocation summon, int id, float health, int minSpawn, int maxSpawn, int minCooldown, int maxCooldown, boolean bypassMaxSpawns, boolean despawnOnDeath, int cap, boolean disableXP, boolean disableLoot, boolean autoAggro, ResourceLocation sound, NBTTagCompound nbt) {
         this.summon = summon;
         this.id = id;
         this.health = health;
@@ -34,6 +35,7 @@ public class SummonSpawnType {
         this.cap = cap;
         this.disableXP = disableXP;
         this.disableLoot = disableLoot;
+        this.autoAggro = autoAggro;
         this.sound = sound;
         this.nbt = nbt;
     }
@@ -76,6 +78,7 @@ public class SummonSpawnType {
         public int cap;                   // Hard cap on the total amount of this summon that can spawn by the master entity
         public boolean disableXP;         // Should XP be dropped by the summons on death
         public boolean disableLoot;       // Should Loot be dropped by the summons on death
+        public boolean autoAggro;
         public ResourceLocation sound;    // The sound to be played when the summon happens
         public NBTTagCompound nbt;
 
@@ -142,6 +145,11 @@ public class SummonSpawnType {
             return this;
         }
 
+        public Builder autoAggro(boolean autoAggro) {
+            this.autoAggro = autoAggro;
+            return this;
+        }
+
         public Builder sound(ResourceLocation sound) {
             this.sound = sound;
             return this;
@@ -153,7 +161,7 @@ public class SummonSpawnType {
         }
 
         public SummonSpawnType build() {
-            return new SummonSpawnType(summon, id, health, minSpawn, maxSpawn, minCooldown, maxCooldown, bypassMaxSpawns, despawnOnDeath, cap, disableXP, disableLoot, sound, nbt);
+            return new SummonSpawnType(summon, id, health, minSpawn, maxSpawn, minCooldown, maxCooldown, bypassMaxSpawns, despawnOnDeath, cap, disableXP, disableLoot, autoAggro, sound, nbt);
         }
     }
 }

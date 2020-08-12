@@ -24,20 +24,20 @@ public class ItemDebug extends Item {
 
     @Override
     public ActionResult<ItemStack> onItemRightClick(World world, EntityPlayer player, EnumHand hand) {
-        if (world.isRemote)
+        if (world.isRemote || !player.isSneaking())
             return super.onItemRightClick(world, player, hand);
 
         if (player.isSneaking()) {
-            String message;
+            String message = "Self: ";
             switch (this.type) {
                 case DAMAGE: {
-                    message = player.getEntityData().hasKey("LastDamageSource") ?
+                    message += player.getEntityData().hasKey("LastDamageSource") ?
                             player.getEntityData().getString("LastDamageSource") :
                             "No damage taken!";
                     break;
                 }
                 case ENTITY: {
-                    message = "minecraft:player";
+                    message += "minecraft:player";
                     break;
                 }
                 case POTION: {
@@ -45,11 +45,11 @@ public class ItemDebug extends Item {
                             .map(effect -> effect.getPotion().getRegistryName().toString())
                             .collect(Collectors.toList());
 
-                    message = activePotionEffectStrings.toString();
+                    message += activePotionEffectStrings.toString();
                     break;
                 }
                 default: {
-                    message = "Invalid Debug Type";
+                    message += "Invalid Debug Type";
                 }
             }
 
@@ -61,19 +61,19 @@ public class ItemDebug extends Item {
 
     @Override
     public boolean itemInteractionForEntity(ItemStack stack, EntityPlayer player, EntityLivingBase target, EnumHand hand) {
-        if (player.world.isRemote)
+        if (player.world.isRemote || player.isSneaking())
             return false;
 
-        String message;
+        String message = "Target: ";
         switch (this.type) {
             case DAMAGE: {
-                message = target.getEntityData().hasKey("LastDamageSource") ?
+                message += target.getEntityData().hasKey("LastDamageSource") ?
                         target.getEntityData().getString("LastDamageSource") :
                         "No damage taken!";
                 break;
             }
             case ENTITY: {
-                message = Utils.getEntityName(target).toString();
+                message += Utils.getEntityName(target).toString();
                 break;
             }
             case POTION: {
@@ -81,11 +81,11 @@ public class ItemDebug extends Item {
                         .map(effect -> effect.getPotion().getRegistryName().toString())
                         .collect(Collectors.toList());
 
-                message = activePotionEffectStrings.toString();
+                message += activePotionEffectStrings.toString();
                 break;
             }
             default: {
-                message = "Invalid Bug Type";
+                message += "Invalid Bug Type";
             }
         }
         player.sendMessage(new TextComponentString(message));

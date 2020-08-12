@@ -124,6 +124,8 @@ public class StringConfig {
             for (int i = this.argIndex; i < this.args.length; i++) {
                 action.accept(this.getArg(i));
             }
+        } else if (this.lastOptional && !this.lastOptionalSucceeded) {
+            action.accept((T) this.defaultOptional);
         } else {
             action.accept(this.getArg());
         }
