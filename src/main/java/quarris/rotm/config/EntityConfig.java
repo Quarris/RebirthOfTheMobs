@@ -19,7 +19,9 @@ import quarris.rotm.utils.Settable;
 import quarris.rotm.utils.Utils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class EntityConfig implements ISubConfig {
     @Config.Name("Cancel Potion Effects")
@@ -40,16 +42,16 @@ public class EntityConfig implements ISubConfig {
     @Config.Name("Cancel Damage Sources")
     @Config.Comment({
             "Cancels a damage source affecting a specified entity.",
-            "Format: \"<modid:entity>;<damageSource>;?<modid:source>\"",
+            "Format: \"<modid:entity>;?<modid:attacker>;<damageSource1>;...;<damageSourceN>\"",
             "Where: <modid:entity> is the entity.",
-            "<damageSource> is the name of the damage dealt.",
-            "?<modid:source> is the optional entity that needs to deal the specified damage",
+            "?<modid:attacker> is the optional entity that needs to deal the specified damage",
+            "<damageSource#> is the list of names of the damages dealt.",
             "Example: ",
             "S:\"Cancel Damage Sources\" <",
             "   minecraft:player;indirectMagic",
-            "   minecraft:zombie;onFire",
-            "   minecraft:zombie;indirectMagic",
-            "   minecraft:player;arrow;minecraft:stray",
+            "   minecraft:zombie;onFire;indirectMagic",
+            "   minecraft:player;minecraft:stray;arrow",
+            "   minecraft:player;minecraft:blaze;mob;fireball",
             ">"
     })
     public String[] rawCancelDamage = new String[]{};
@@ -59,7 +61,7 @@ public class EntityConfig implements ISubConfig {
     @Config.Name("Summon Spawns")
     @Config.Comment({
             "Summon Spawns allows mobs to be summoned when an entity has a target and reaches a certain health.",
-            "Format: <modid:master>;<modid:summon>;<healthPercentage>;<spawnRange>;<cooldownRange>;<bypass>;<despawnOnDeath>;<maxCap>;<disableXP>;<disableLoot>;<?sound>;?<id>;?<nbt>",
+            "Format: <modid:master>;<modid:summon>;<healthPercentage>;<spawnRange>;<cooldownRange>;<bypass>;<despawnOnDeath>;<maxCap>;<disableXP>;<disableLoot>;<autoAggro>;<?sound>;?<id>;?<nbt>",
             "Where: <modid:master> and <modid:summon> are the entities for the master and the mob to summon respectively.",
             "<healthPercentage> is a value between 0 and 100 (inclusive) which determines the health that the master entity has to be at to spawn the summon",
             "<spawnRange> is a '-' separated min-max range of summons that can spawn in one cycle. Additionally higher value determines the maximum amount of this summon entity that can exist by the master entity.",
@@ -68,6 +70,7 @@ public class EntityConfig implements ISubConfig {
             "<despawnOnDeath> is a true/false value and will cause all summons of this type to die when the master entity dies.",
             "<maxCap> is the maximum amount of this summon type that can ever be spawned by this entity. Set this to 0 or less to disable",
             "<disableXP> and <disableLoot> are true/false values and will make it so that the summoned entities do not drop XP or Loot respectively",
+            "<autoAggro> is a true/false value will set the summoned entities to aggro onto the target of the master if set to true",
             "<?sound> is the (optional) sound that will be played when the summon happens",
             "?<nbt> optional NBT to apply to the summon on spawn.",
             "?<id> optional number if you want to have a master:summon combo more than once. This has to be unique.",
@@ -87,10 +90,11 @@ public class EntityConfig implements ISubConfig {
     @Config.Name("Death Spawns")
     @Config.Comment({
             "Death Spawns allows mobs to be summoned when an entity dies.",
-            "Format: <modid:entity>;<modid:spawn>;<spawnRange>;<disableXP>;<disableLoot>;<?sound>;?<nbt>",
+            "Format: <modid:entity>;<modid:spawn>;<spawnRange>;<disableXP>;<disableLoot>;<autoAggro>;<?sound>;?<nbt>",
             "Where: <modid:master> and <modid:spawn> are the entities for the entity that dies and the mob that spawns respectively.",
             "<spawnRange> is the min-max range of summons that can spawn in one cycle.",
             "<disableXP> and <disableLoot> are true/false values and will make it so that the summoned entities do not drop XP or Loot respectively",
+            "<autoAggro> is a true/false value will set the summoned entities to aggro onto the target of the dying entity if set to true",
             "<?sound> is the (optional) sound that will be played when the summon happens",
             "?<nbt> optional NBT to apply to the summon on spawn.",
             "Example:",
@@ -188,20 +192,20 @@ public class EntityConfig implements ISubConfig {
     private void updateDamageSourceConfigs() {
         this.damagesToCancel.clear();
         for (String s : this.rawCancelDamage) {
-            Settable<String> damageType = Settable.create();
             Settable<ResourceLocation> entity = Settable.create();
             Settable<ResourceLocation> target = Settable.create();
+            Set<String> damageTypes = new HashSet<>();
             try {
                 new StringConfig(s)
                         .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(entity::set)
-                        .next().accept(damageType::set)
-                        .next().optional(null).parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(target::set);
+                        .next().optional(null).parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(target::set)
+                        .rest().accept(damageTypes::add);
+
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
                 continue;
             }
-
-            this.damagesToCancel.put(Pair.of(entity.get(), target.get()), damageType.get());
+            this.damagesToCancel.putAll(Pair.of(entity.get(), target.get()), damageTypes);
         }
     }
 
@@ -223,6 +227,7 @@ public class EntityConfig implements ISubConfig {
                         .next().parseAs(Integer::parseInt).accept(builder::cap)
                         .next().parseAs(Boolean::parseBoolean).accept(builder::disableXP)
                         .next().parseAs(Boolean::parseBoolean).accept(builder::disableLoot)
+                        .next().parseAs(Boolean::parseBoolean).accept(builder::autoAggro)
                         .next().optional(null).parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
                         .next().optional(0).parseAs(Integer::parseInt)
                         .<Integer>validate((id) -> {
@@ -261,6 +266,7 @@ public class EntityConfig implements ISubConfig {
                         .next().parseAs(Integer::parseInt).<Integer>validateRange((min, max) -> min <= max).acceptRange(builder::minSpawn, builder::maxSpawn)
                         .next().parseAs(Boolean::parseBoolean).accept(builder::disableXP)
                         .next().parseAs(Boolean::parseBoolean).accept(builder::disableLoot)
+                        .next().parseAs(Boolean::parseBoolean).accept(builder::autoAggro)
                         .next().optional(null).parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
                         .next().optional(new NBTTagCompound())
                         .parseAs(str -> {

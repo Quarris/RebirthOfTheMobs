@@ -211,6 +211,10 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
                         toSpawn.getEntityData().setBoolean("DisableLoot", true);
                     }
 
+                    if (toSpawn instanceof EntityLiving && master instanceof EntityLiving && this.entry.autoAggro) {
+                        ((EntityLiving) toSpawn).setAttackTarget(((EntityLiving) master).getAttackTarget());
+                    }
+
                     int tries = 50;
                     for (int j = 0; j < tries; j++) {
                         toSpawn.setLocationAndAngles(

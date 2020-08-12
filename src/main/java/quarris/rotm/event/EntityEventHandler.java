@@ -56,7 +56,9 @@ public class EntityEventHandler {
 
         ResourceLocation entityName = Utils.getEntityName(entity);
 
-        List<String> sourcesToCancel = new ArrayList<>(config.damagesToCancel.get(Pair.of(entityName, null)));
+        Set<String> sourcesToCancel = new HashSet<>();
+        sourcesToCancel.addAll(config.damagesToCancel.get(Pair.of(entityName, null)));
+
         if (source.getTrueSource() != null) {
             sourcesToCancel.addAll(config.damagesToCancel.get(Pair.of(entityName, Utils.getEntityName(source.getTrueSource()))));
         }
@@ -134,6 +136,10 @@ public class EntityEventHandler {
 
                         if (spawn.disableXP) {
                             toSpawn.getEntityData().setBoolean("DisableLoot", true);
+                        }
+
+                        if (toSpawn instanceof EntityLiving && entity instanceof EntityLiving && spawn.autoAggro) {
+                            ((EntityLiving) toSpawn).setAttackTarget(((EntityLiving) entity).getAttackTarget());
                         }
 
                         BlockPos entityPos = entity.getPosition();
