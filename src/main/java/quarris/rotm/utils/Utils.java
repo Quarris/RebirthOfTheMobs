@@ -10,6 +10,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
+import quarris.rotm.config.ModConfigs;
 
 import static net.minecraft.world.WorldEntitySpawner.isValidEmptySpawnBlock;
 
@@ -28,11 +29,12 @@ public class Utils {
     }
 
     public static boolean canEntitySpawn(IBlockAccess world, BlockPos pos) {
+        return true;
+        /*
         IBlockState iblockstate = world.getBlockState(pos);
 
         BlockPos downPos = pos.down();
         IBlockState downState = world.getBlockState(downPos);
-
 
         if (downState.getMaterial().isSolid()) {
             Block block = downState.getBlock();
@@ -41,6 +43,7 @@ public class Utils {
         }
 
         return false;
+        */
     }
 
     public static boolean isEntityInCollision(World world, Entity entity) {

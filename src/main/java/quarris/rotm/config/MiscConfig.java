@@ -8,10 +8,7 @@ import quarris.rotm.config.utils.StringConfig;
 import quarris.rotm.config.utils.StringConfigException;
 import quarris.rotm.utils.Utils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MiscConfig implements ISubConfig {
 
@@ -42,27 +39,39 @@ public class MiscConfig implements ISubConfig {
 
     @Config.RequiresMcRestart
     @Config.Comment("This config allows natural spawns on most solid blocks such as slabs or stairs.")
-    public boolean naturalSpawnBuff = true;
+    public boolean naturalSpawnBuff = false;
+
+    @Config.Comment({
+            "List of entity names to ignore blocks during natural spawns. This essentially mean that these entities can spawn anywhere in the air",
+            "Note: naturalSpawnBuff has to be set to 'true'",
+            "Format: <modid:entity>",
+            "Where: <modid:entity> is the entity to ignore the block spawns"
+    })
+    public String[] rawIgnoreBlockSpawns = new String[]{};
+
+    @Config.Ignore
+    public final Set<ResourceLocation> ignoreBlockSpawns = new HashSet<>();
 
     @Override
     public void onConfigChanged() {
         this.updateGlobalSwimSpeedList();
         this.updateSwimSpeedList();
+        this.updateIgnoreBlockSpawns();
     }
 
-    public void updateGlobalSwimSpeedList() {
+    private void updateGlobalSwimSpeedList() {
         this.globalSwimSpeedBlocklist.clear();
         for (String s : this.rawGlobalSwimSpeedBlocklist) {
             try {
                 new StringConfig(s)
-                        .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).<ResourceLocation>accept(globalSwimSpeedBlocklist::add);
+                        .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).<ResourceLocation>accept(this.globalSwimSpeedBlocklist::add);
             } catch (StringConfigException e) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, e.getLocalizedMessage());
             }
         }
     }
 
-    public void updateSwimSpeedList() {
+    private void updateSwimSpeedList() {
         this.swimSpeedMultipliers.clear();
         for (String s : this.rawSwimSpeedMultipliers) {
             try {
@@ -72,6 +81,19 @@ public class MiscConfig implements ISubConfig {
                         .next().parseAs(Float::parseFloat).accept(pair::setRight);
 
                 this.swimSpeedMultipliers.put(pair.left, pair.right);
+            } catch (StringConfigException e) {
+                ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, e.getLocalizedMessage());
+            }
+        }
+    }
+
+    private void updateIgnoreBlockSpawns() {
+        this.ignoreBlockSpawns.clear();
+
+        for (String s : this.rawIgnoreBlockSpawns) {
+            try {
+                new StringConfig(s)
+                        .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(this.ignoreBlockSpawns::add);
             } catch (StringConfigException e) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, e.getLocalizedMessage());
             }

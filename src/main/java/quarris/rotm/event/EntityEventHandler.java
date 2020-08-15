@@ -37,13 +37,11 @@ public class EntityEventHandler {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void cancelPotionApply(PotionEvent.PotionApplicableEvent event) {
         EntityLivingBase entity = event.getEntityLiving();
-        if (!entity.world.isRemote) {
-            Set<ResourceLocation> potionsToCancel = ModConfigs.entityConfigs.potionsToCancel
-                    .get(Utils.getEntityName(entity));
+        Set<ResourceLocation> potionsToCancel = ModConfigs.entityConfigs.potionsToCancel
+                .get(Utils.getEntityName(entity));
 
-            if (potionsToCancel.contains(event.getPotionEffect().getPotion().getRegistryName())) {
-                event.setResult(Event.Result.DENY);
-            }
+        if (potionsToCancel.contains(event.getPotionEffect().getPotion().getRegistryName())) {
+            event.setResult(Event.Result.DENY);
         }
     }
 

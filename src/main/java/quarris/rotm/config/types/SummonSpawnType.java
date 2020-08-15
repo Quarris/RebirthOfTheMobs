@@ -59,6 +59,7 @@ public class SummonSpawnType {
         sb.append(", cap=").append(cap);
         sb.append(", disableXP=").append(disableXP);
         sb.append(", disableLoot=").append(disableLoot);
+        sb.append(", autoAggro=").append(autoAggro);
         sb.append(", sound=").append(sound);
         sb.append(", nbt=").append(nbt);
         sb.append('}');
