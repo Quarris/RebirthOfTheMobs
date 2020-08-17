@@ -41,6 +41,7 @@ public class MiscConfig implements ISubConfig {
     @Config.Comment("This config allows natural spawns on most solid blocks such as slabs or stairs.")
     public boolean naturalSpawnBuff = false;
 
+    /*
     @Config.Comment({
             "List of entity names to ignore blocks during natural spawns. This essentially mean that these entities can spawn anywhere in the air",
             "Note: naturalSpawnBuff has to be set to 'true'",
@@ -51,12 +52,13 @@ public class MiscConfig implements ISubConfig {
 
     @Config.Ignore
     public final Set<ResourceLocation> ignoreBlockSpawns = new HashSet<>();
+    */
 
     @Override
     public void onConfigChanged() {
         this.updateGlobalSwimSpeedList();
         this.updateSwimSpeedList();
-        this.updateIgnoreBlockSpawns();
+        //this.updateIgnoreBlockSpawns();
     }
 
     private void updateGlobalSwimSpeedList() {
@@ -87,6 +89,7 @@ public class MiscConfig implements ISubConfig {
         }
     }
 
+    /*
     private void updateIgnoreBlockSpawns() {
         this.ignoreBlockSpawns.clear();
 
@@ -99,4 +102,5 @@ public class MiscConfig implements ISubConfig {
             }
         }
     }
+    */
 }

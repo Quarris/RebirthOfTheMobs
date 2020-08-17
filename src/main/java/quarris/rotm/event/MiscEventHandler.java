@@ -52,6 +52,7 @@ public class MiscEventHandler {
         }
     }
 
+    /*
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void canEntitySpawn(LivingSpawnEvent.CheckSpawn event) {
         if (ModConfigs.miscConfigs.naturalSpawnBuff) {
@@ -75,4 +76,5 @@ public class MiscEventHandler {
             }
         }
     }
+    */
 }
