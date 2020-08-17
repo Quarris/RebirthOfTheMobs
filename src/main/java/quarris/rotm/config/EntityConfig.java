@@ -76,10 +76,10 @@ public class EntityConfig implements ISubConfig {
             "?<id> optional number if you want to have a master:summon combo more than once. This has to be unique.",
             "Example:",
             "S:\"Summon Spawns\" <",
-            "   minecraft:zombie;minecraft:skeleton;100;1;3-5;false;true;0;true;true;minecraft:ambient.cave;{NoAI:1b}",
-            "   minecraft:zombie;minecraft:skeleton;50;3-4;5-20;false;true;30;true;false;minecraft:entity.enderdragon.growl;1",
-            "   minecraft:zombie;minecraft:bat;60;1;6-10;true;false;30;false;false;minecraft:ambient.cave",
-            "   minecraft:player;minecraft:rabbit;80;3-7;5-20;false;true;0;false;true;minecraft:ambient.cave",
+            "   minecraft:zombie;minecraft:skeleton;100;1;3-5;false;true;0;true;true;true;minecraft:ambient.cave;{NoAI:1b}",
+            "   minecraft:zombie;minecraft:skeleton;50;3-4;5-20;false;true;30;true;false;true;minecraft:entity.enderdragon.growl;1",
+            "   minecraft:zombie;minecraft:bat;60;1;6-10;true;false;30;false;false;false;minecraft:ambient.cave",
+            "   minecraft:player;minecraft:rabbit;80;3-7;5-20;false;true;0;false;true;false;minecraft:ambient.cave",
             ">",
     })
     public String[] rawSummonSpawns = new String[]{};
@@ -99,8 +99,8 @@ public class EntityConfig implements ISubConfig {
             "?<nbt> optional NBT to apply to the summon on spawn.",
             "Example:",
             "S:\"Death Spawns\" <",
-            "   minecraft:zombie;minecraft:spider;2-5;true;false;minecraft:ambient.cave",
-            "   minecraft:zombie;minecraft:villager;1;false;false;minecraft:entity.enderdragon.growl;{NoAI:1b}",
+            "   minecraft:zombie;minecraft:spider;2-5;true;false;true;minecraft:ambient.cave",
+            "   minecraft:zombie;minecraft:villager;1;false;false;false;minecraft:entity.enderdragon.growl;{NoAI:1b}",
             ">",
     })
     public String[] rawDeathSpawns = new String[]{};
