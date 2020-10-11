@@ -13,6 +13,17 @@ public class StringConfig {
 
     private static final Function<String, String> DEFAULT_CONVERTER = Function.identity();
 
+    public static boolean strictParseBoolean(String bool) throws IllegalArgumentException {
+        if (bool != null) {
+            if (bool.equalsIgnoreCase("true"))
+                return true;
+            if (bool.equalsIgnoreCase("false"))
+                return false;
+        }
+
+        throw new IllegalArgumentException("'" + bool + "' needs to be either 'true' or 'false'");
+    }
+
     private final Function<Integer, StringConfigException> outOfArgsException;
     private final Function<Integer, StringConfigException> converterException;
     private final Function<Integer, StringConfigException> invalidArgumentException;

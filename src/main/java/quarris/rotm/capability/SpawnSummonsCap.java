@@ -136,7 +136,7 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
                     (master.getHealth() / master.getMaxHealth()) <= this.entry.health &&
                     (this.entry.bypassMaxSpawns || this.summonedEntities.size() < this.entry.maxSpawn) &&
                     (this.entry.cap <= 0 || this.totalSpawned < this.entry.cap)) {
-                return !(master instanceof EntityLiving) || ((EntityLiving) master).getAttackTarget() != null;
+                return !this.entry.requireTarget || !(master instanceof EntityLiving) || ((EntityLiving) master).getAttackTarget() != null;
             }
 
             return false;

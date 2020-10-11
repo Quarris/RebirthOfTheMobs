@@ -71,7 +71,8 @@ public class EntityConfig implements ISubConfig {
             "<maxCap> is the maximum amount of this summon type that can ever be spawned by this entity. Set this to 0 or less to disable",
             "<disableXP> and <disableLoot> are true/false values and will make it so that the summoned entities do not drop XP or Loot respectively",
             "<autoAggro> is a true/false value will set the summoned entities to aggro onto the target of the master if set to true",
-            "<?sound> is the (optional) sound that will be played when the summon happens",
+            "?<requireTarget> is an (optional) true/false value which checks if the summon requires the master to be targeting another entity. This can be used for entities that do not use targets as normal combat system, for example the Ender Dragon",
+            "?<sound> is the (optional) sound that will be played when the summon happens",
             "?<nbt> optional NBT to apply to the summon on spawn.",
             "?<id> optional number if you want to have a master:summon combo more than once. This has to be unique.",
             "Example:",
@@ -80,6 +81,7 @@ public class EntityConfig implements ISubConfig {
             "   minecraft:zombie;minecraft:skeleton;50;3-4;5-20;false;true;30;true;false;true;minecraft:entity.enderdragon.growl;1",
             "   minecraft:zombie;minecraft:bat;60;1;6-10;true;false;30;false;false;false;minecraft:ambient.cave",
             "   minecraft:player;minecraft:rabbit;80;3-7;5-20;false;true;0;false;true;false;minecraft:ambient.cave",
+            "   minecraft:ender_dragon;minecraft:vex;80;6-8;10-20;false;true;80;true;false;true;true;minecraft:entity.enderdragon.growl",
             ">",
     })
     public String[] rawSummonSpawns = new String[]{};
@@ -228,6 +230,7 @@ public class EntityConfig implements ISubConfig {
                         .next().parseAs(Boolean::parseBoolean).accept(builder::disableXP)
                         .next().parseAs(Boolean::parseBoolean).accept(builder::disableLoot)
                         .next().parseAs(Boolean::parseBoolean).accept(builder::autoAggro)
+                        .next().optional(true).parseAs(StringConfig::strictParseBoolean).accept(builder::requireTarget)
                         .next().optional(null).parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
                         .next().optional(0).parseAs(Integer::parseInt)
                         .<Integer>validate((id) -> {

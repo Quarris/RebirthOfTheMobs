@@ -34,7 +34,7 @@ import java.util.function.BiPredicate;
 public class ROTM {
     public static final String MODID = "rotm";
     public static final String NAME = "Rebirth of the Mobs";
-    public static final String VERSION = "1.0.2";
+    public static final String VERSION = "1.1.0";
 
     public static Logger logger;
 
@@ -89,7 +89,6 @@ public class ROTM {
         @SideOnly(Side.CLIENT)
         @SubscribeEvent
         public static void registerItemModels(ModelRegistryEvent event) {
-            System.out.println("Registering Models");
             proxy.registerItemModels();
         }
     }
