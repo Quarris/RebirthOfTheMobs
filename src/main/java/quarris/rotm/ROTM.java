@@ -89,7 +89,6 @@ public class ROTM {
         @SideOnly(Side.CLIENT)
         @SubscribeEvent
         public static void registerItemModels(ModelRegistryEvent event) {
-            System.out.println("Registering Models");
             proxy.registerItemModels();
         }
     }
