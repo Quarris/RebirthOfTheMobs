@@ -12,8 +12,9 @@ public class DeathSpawnType {
     public final boolean autoAggro;
     public final ResourceLocation sound;    // The sound to be played when the summon happens
     public final NBTTagCompound nbt;        // NBT to apply to the summoned entity on spawn
+    public final float chance;              // Chance that the mobs are spawned
 
-    public DeathSpawnType(ResourceLocation summon, int minSpawn, int maxSpawn, boolean disableXP, boolean disableLoot, boolean autoAggro, ResourceLocation sound, NBTTagCompound nbt) {
+    public DeathSpawnType(ResourceLocation summon, int minSpawn, int maxSpawn, boolean disableXP, boolean disableLoot, boolean autoAggro, ResourceLocation sound, NBTTagCompound nbt, float chance) {
         this.summon = summon;
         this.minSpawn = minSpawn;
         this.maxSpawn = maxSpawn;
@@ -22,6 +23,7 @@ public class DeathSpawnType {
         this.autoAggro = autoAggro;
         this.sound = sound;
         this.nbt = nbt;
+        this.chance = chance;
     }
 
     public static Builder builder() {
@@ -38,6 +40,7 @@ public class DeathSpawnType {
         sb.append(", disableLoot=").append(disableLoot);
         sb.append(", sound=").append(sound);
         sb.append(", nbt=").append(nbt);
+        sb.append(", chance=").append(chance);
         sb.append('}');
         return sb.toString();
     }
@@ -51,6 +54,8 @@ public class DeathSpawnType {
         public ResourceLocation sound;    // The sound to be played when the summon happens
         public NBTTagCompound nbt;
         public boolean autoAggro;
+        public float chance;              // Chance that the mobs are spawned
+
 
         Builder() { }
 
@@ -95,8 +100,13 @@ public class DeathSpawnType {
             return this;
         }
 
+        public Builder chance(float chance) {
+            this.chance = chance;
+            return this;
+        }
+
         public DeathSpawnType build() {
-            return new DeathSpawnType(summon, minSpawn, maxSpawn, disableXP, disableLoot, autoAggro, sound, nbt);
+            return new DeathSpawnType(summon, minSpawn, maxSpawn, disableXP, disableLoot, autoAggro, sound, nbt, chance);
         }
     }
 }

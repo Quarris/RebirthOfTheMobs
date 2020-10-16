@@ -115,6 +115,7 @@ public class EntityEventHandler {
                 .forEach(spawn -> {
                     Random random = new Random();
                     int amount = spawn.minSpawn + random.nextInt(spawn.maxSpawn - spawn.minSpawn + 1);
+                    if (random.nextFloat()*100 > spawn.chance) amount = 0;
                     boolean spawned = false;
                     for (int i = 0; i < amount; i++) {
                         Entity toSpawn = EntityList.createEntityByIDFromName(spawn.summon, entity.world);

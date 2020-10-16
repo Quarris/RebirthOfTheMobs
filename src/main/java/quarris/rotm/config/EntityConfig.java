@@ -92,17 +92,19 @@ public class EntityConfig implements ISubConfig {
     @Config.Name("Death Spawns")
     @Config.Comment({
             "Death Spawns allows mobs to be summoned when an entity dies.",
-            "Format: <modid:entity>;<modid:spawn>;<spawnRange>;<disableXP>;<disableLoot>;<autoAggro>;<?sound>;?<nbt>",
+            "Format: <modid:entity>;<modid:spawn>;<spawnRange>;<disableXP>;<disableLoot>;<autoAggro>;<?sound>;?<nbt>;<?chance>",
             "Where: <modid:master> and <modid:spawn> are the entities for the entity that dies and the mob that spawns respectively.",
             "<spawnRange> is the min-max range of summons that can spawn in one cycle.",
             "<disableXP> and <disableLoot> are true/false values and will make it so that the summoned entities do not drop XP or Loot respectively",
             "<autoAggro> is a true/false value will set the summoned entities to aggro onto the target of the dying entity if set to true",
             "<?sound> is the (optional) sound that will be played when the summon happens",
             "?<nbt> optional NBT to apply to the summon on spawn.",
+            "<?chance> is the (optional) percentage (0-100 exclusive-inclusive) chance that the summons will spawn (100 by default).",
             "Example:",
             "S:\"Death Spawns\" <",
             "   minecraft:zombie;minecraft:spider;2-5;true;false;true;minecraft:ambient.cave",
             "   minecraft:zombie;minecraft:villager;1;false;false;false;minecraft:entity.enderdragon.growl;{NoAI:1b}",
+            "   minecraft:zombie;minecraft:villager;1;false;false;false;minecraft:entity.enderdragon.growl;{NoAI:1b};50",
             ">",
     })
     public String[] rawDeathSpawns = new String[]{};
@@ -279,7 +281,8 @@ public class EntityConfig implements ISubConfig {
                                 ROTM.logger.warn("Could not parse NBT for {}; {}", s, e.getMessage());
                             }
                             return new NBTTagCompound();
-                        }).accept(builder::nbt);
+                        }).accept(builder::nbt)
+                        .next().optional((float) 100).parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance);
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
