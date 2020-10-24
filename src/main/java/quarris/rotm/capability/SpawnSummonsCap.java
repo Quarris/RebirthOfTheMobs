@@ -243,9 +243,13 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
 
         public void despawnSummons() {
             EntityLivingBase master = SpawnSummonsCap.this.entity;
-            master.world.loadedEntityList.stream()
-                    .filter(e -> this.summonedEntities.contains(e.getUniqueID()))
-                    .forEach(Entity::setDead);
+            List<Entity> loadedEntityList = master.world.loadedEntityList;
+            for (int i = 0; i < loadedEntityList.size(); i++) {
+                Entity e = loadedEntityList.get(i);
+                if (!e.isDead && this.summonedEntities.contains(e.getUniqueID())) {
+                    e.setDead();
+                }
+            }
         }
 
         @Override

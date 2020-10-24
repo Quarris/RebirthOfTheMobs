@@ -46,6 +46,7 @@ public class ROTM {
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         logger = event.getModLog();
+        logger.info("Loading ROTM");
     }
 
     @EventHandler
