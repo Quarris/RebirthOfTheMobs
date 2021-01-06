@@ -92,7 +92,7 @@ public class EntityConfig implements ISubConfig {
     @Config.Name("Death Spawns")
     @Config.Comment({
             "Death Spawns allows mobs to be summoned when an entity dies.",
-            "Format: <modid:entity>;<modid:spawn>;<spawnRange>;<disableXP>;<disableLoot>;<autoAggro>;<?sound>;?<nbt>;<?chance>",
+            "Format: <modid:entity>;<modid:spawn>;<spawnRange>;<disableXP>;<disableLoot>;<autoAggro>;<?sound>;?<nbt>;?<chance>",
             "Where: <modid:master> and <modid:spawn> are the entities for the entity that dies and the mob that spawns respectively.",
             "<spawnRange> is the min-max range of summons that can spawn in one cycle.",
             "<disableXP> and <disableLoot> are true/false values and will make it so that the summoned entities do not drop XP or Loot respectively",
@@ -282,7 +282,7 @@ public class EntityConfig implements ISubConfig {
                             }
                             return new NBTTagCompound();
                         }).accept(builder::nbt)
-                        .next().optional((float) 100).parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance);
+                        .next().optional(100).parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance);
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
@@ -326,7 +326,8 @@ public class EntityConfig implements ISubConfig {
                         .next().parseAs(Float::parseFloat).<Float>validate(health -> health > 0 && health <= 100).accept(builder::health)
                         .next().parseAs(Integer::parseInt).<Integer>validate(level -> level >= 0).accept(builder::level)
                         .next().parseAs(Integer::parseInt).<Integer>validate(duration -> duration >= 0).accept(builder::duration)
-                        .next().parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance).next().optional(null).parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
+                        .next().parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance)
+                        .next().optional(null).parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
                         .next().optional("![]").parseAs(Integer::parseInt).validateList(DimensionManager::isDimensionRegistered).blockList(builder::blockDimensions).acceptList(builder::dimension)
                         .next().optional("").accept(builder::damageType);
             } catch (StringConfigException exception) {

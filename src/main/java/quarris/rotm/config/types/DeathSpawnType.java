@@ -101,7 +101,7 @@ public class DeathSpawnType {
         }
 
         public Builder chance(float chance) {
-            this.chance = chance;
+            this.chance = chance / 100f;
             return this;
         }
 
