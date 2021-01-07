@@ -282,7 +282,7 @@ public class EntityConfig implements ISubConfig {
                             }
                             return new NBTTagCompound();
                         }).accept(builder::nbt)
-                        .next().optional(100).parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance);
+                        .next().optional(100f).parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance);
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
