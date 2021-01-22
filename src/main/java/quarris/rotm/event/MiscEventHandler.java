@@ -1,18 +1,10 @@
 package quarris.rotm.event;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
-import net.minecraft.init.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.event.entity.living.LivingSpawnEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.eventhandler.Event;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import quarris.rotm.ROTM;
 import quarris.rotm.config.ModConfigs;
@@ -32,7 +24,7 @@ public class MiscEventHandler {
             }
 
             if (multiplier != 1.0f) {
-                entity.getEntityAttribute(EntityLivingBase.SWIM_SPEED).applyModifier(new AttributeModifier("SwimSpeedModifier", multiplier, 1));
+                entity.getEntityAttribute(EntityLivingBase.SWIM_SPEED).applyModifier(new AttributeModifier("SwimSpeedModifier", multiplier, 1).setSaved(false));
             }
         }
     }
@@ -48,7 +40,9 @@ public class MiscEventHandler {
                 multiplier *= ModConfigs.miscConfigs.globalSwimSpeedMultiplier;
             }
 
-            entity.motionY /= multiplier;
+            if (entity.motionY > 0) {
+                entity.motionY /= multiplier;
+            }
         }
     }
 

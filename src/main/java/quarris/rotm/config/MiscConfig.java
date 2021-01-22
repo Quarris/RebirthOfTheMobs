@@ -8,7 +8,10 @@ import quarris.rotm.config.utils.StringConfig;
 import quarris.rotm.config.utils.StringConfigException;
 import quarris.rotm.utils.Utils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class MiscConfig implements ISubConfig {
 

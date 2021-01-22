@@ -10,7 +10,6 @@ import quarris.rotm.config.ModConfigs;
 import quarris.rotm.config.VehicleConfig;
 import quarris.rotm.utils.Utils;
 
-import java.util.Collection;
 import java.util.Set;
 
 @Mod.EventBusSubscriber(modid = ROTM.MODID)
