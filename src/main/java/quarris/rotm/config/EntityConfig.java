@@ -185,11 +185,10 @@ public class EntityConfig implements ISubConfig {
                 new StringConfig(s)
                         .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(entity::set)
                         .rest().parseAs(ResourceLocation::new).validate(ForgeRegistries.POTIONS::containsKey).<ResourceLocation>accept(potions::add);
+                this.potionsToCancel.putAll(entity.get(), potions);
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
-
-            this.potionsToCancel.putAll(entity.get(), potions);
         }
     }
 
@@ -204,12 +203,11 @@ public class EntityConfig implements ISubConfig {
                         .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(entity::set)
                         .next().optional(null).parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(target::set)
                         .rest().accept(damageTypes::add);
-
+                this.damagesToCancel.putAll(Pair.of(entity.get(), target.get()), damageTypes);
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
-                continue;
             }
-            this.damagesToCancel.putAll(Pair.of(entity.get(), target.get()), damageTypes);
+
         }
     }
 
@@ -250,11 +248,10 @@ public class EntityConfig implements ISubConfig {
                             }
                             return new NBTTagCompound();
                         }).accept(builder::nbt);
+                this.summonSpawns.put(masterSetter.get(), builder.build());
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
-
-            this.summonSpawns.put(masterSetter.get(), builder.build());
         }
     }
 
@@ -283,11 +280,11 @@ public class EntityConfig implements ISubConfig {
                             return new NBTTagCompound();
                         }).accept(builder::nbt)
                         .next().optional(100f).parseAs(Float::parseFloat).<Float>validate(chance -> chance > 0 && chance <= 100).accept(builder::chance);
+                this.deathSpawns.put(masterSetter.get(), builder.build());
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
 
-            this.deathSpawns.put(masterSetter.get(), builder.build());
         }
     }
 
@@ -307,10 +304,10 @@ public class EntityConfig implements ISubConfig {
                         .next().optional(null).parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
                         .next().optional("![]").parseAs(Integer::parseInt).validateList(DimensionManager::isDimensionRegistered).blockList(builder::blockDimensions).acceptList(builder::dimension)
                         .next().optional("").accept(builder::damageType);
+                this.mobOffense.put(entity.get(), builder.build());
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
-            this.mobOffense.put(entity.get(), builder.build());
         }
     }
 
@@ -330,10 +327,10 @@ public class EntityConfig implements ISubConfig {
                         .next().optional(null).parseAs(ResourceLocation::new).validate(ForgeRegistries.SOUND_EVENTS::containsKey).accept(builder::sound)
                         .next().optional("![]").parseAs(Integer::parseInt).validateList(DimensionManager::isDimensionRegistered).blockList(builder::blockDimensions).acceptList(builder::dimension)
                         .next().optional("").accept(builder::damageType);
+                this.mobDefenses.put(entity.get(), builder.build());
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
-            this.mobDefenses.put(entity.get(), builder.build());
         }
     }
 
@@ -349,10 +346,10 @@ public class EntityConfig implements ISubConfig {
                         .next().parseAs(Float::parseFloat).<Float>validate(health -> health > 0 && health <= 100).accept(builder::healthPercentage)
                         .next().parseAs(Boolean::parseBoolean).accept(builder::lastManStanding)
                         .next().optional(0).parseAs(Float::parseFloat).accept(builder::radius);
+                this.healthRegains.put(entity.get(), builder.build());
             } catch (StringConfigException exception) {
                 ROTM.logger.warn("Could not parse config; skipping {}\n{}", s, exception.getLocalizedMessage());
             }
-            this.healthRegains.put(entity.get(), builder.build());
         }
     }
 }

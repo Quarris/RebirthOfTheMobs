@@ -84,12 +84,12 @@ public class VehicleConfig implements ISubConfig {
                 new StringConfig(s)
                         .next().parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(vehicle::set)
                         .next().optional(null).parseAs(ResourceLocation::new).validate(Utils::doesEntityExist).accept(entity::set);
+                this.vehicleCancelOverrides.put(vehicle.get(), entity.get());
             } catch (StringConfigException e) {
                 ROTM.logger.warn("Could not parse config; skipping {}", s);
                 continue;
             }
 
-            this.vehicleCancelOverrides.put(vehicle.get(), entity.get());
         }
 
         for (String s : rawGlobalCancelOverrides) {
