@@ -124,11 +124,15 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
         private long nextSpawnTime;
         private int totalSpawned;
         private final List<UUID> summonedEntities;
+        private final List<UUID> attemptedSummons;
+
+        private boolean madeSound;
 
         public SummonSpawn(SummonSpawnType entry, long time) {
             this.entry = entry;
             this.nextSpawnTime = time;
-            this.summonedEntities = new ArrayList<>();
+            this.summonedEntities = new LinkedList<>();
+            this.attemptedSummons = new LinkedList<>();
         }
 
         public boolean canSpawn(World world, EntityLivingBase master) {
@@ -178,12 +182,34 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
         }
 
         public void updateSummonList() {
+            EntityLivingBase master = SpawnSummonsCap.this.entity;
+            World world = master.world;
+            // See if any of the attempted summons are actually in the world
+            boolean spawned = false;
+            for (int i = this.attemptedSummons.size() - 1; i >= 0; i--) {
+                UUID attemptedSummonUUID = this.attemptedSummons.get(i);
+                if (world.loadedEntityList.stream().anyMatch(e -> attemptedSummonUUID.equals(e.getUniqueID()))) {
+                    spawned = true;
+                    this.summonedEntities.add(attemptedSummonUUID);
+                    this.totalSpawned++;
+                }
+            }
+            if (spawned) {
+                if (this.entry.sound != null && !this.madeSound) {
+                    world.playSound(null, master.getPosition(), ForgeRegistries.SOUND_EVENTS.getValue(this.entry.sound), SoundCategory.HOSTILE, 1, 1);
+                }
+                this.setRandomCooldownFrom(master.world.getTotalWorldTime());
+            }
+            this.attemptedSummons.clear();
+            // Update the current summons list if the entity has died or otherwise.
             for (int i = this.summonedEntities.size() - 1; i >= 0; i--) {
                 UUID summonedUUID = this.summonedEntities.get(i);
                 if (!SpawnSummonsCap.this.entity.world.loadedEntityList.stream().anyMatch(e -> summonedUUID.equals(e.getUniqueID()))) {
                     this.summonedEntities.remove(i);
                 }
             }
+
+            this.madeSound = false;
         }
 
         public void attemptSpawn() {
@@ -231,10 +257,14 @@ public class SpawnSummonsCap implements ICapabilitySerializable<NBTTagCompound> 
                             break;
                         }
                     }
+                    // Some mods cancel the EntityJoinWorldEvent in the spawnEntity(Entity) method, and then add the entity themselves which could cause severe problems
+                    // Keep track of the uuids we tried to spawn, and then in the next tick update our summoned list accordingly
+                    this.attemptedSummons.add(toSpawn.getUniqueID());
                 }
                 if (spawned) {
                     if (this.entry.sound != null) {
                         master.world.playSound(null, master.getPosition(), ForgeRegistries.SOUND_EVENTS.getValue(this.entry.sound), SoundCategory.HOSTILE, 1, 1);
+                        this.madeSound = true;
                     }
                     this.setRandomCooldownFrom(master.world.getTotalWorldTime());
                 }
